@@ -20,21 +20,31 @@ for ie = 1:length(eventids)
 	disp(datapath);
 	saclist = dir([datapath,'*.sac']);
 	for isac = 1:length(saclist)
+		% read sac file
 		sacfilename = [datapath,saclist(isac).name];
 		sac = readsac(sacfilename);
-		event.stadata(isac).stla = sac.STLA;
-		event.stadata(isac).stlo = sac.STLO;
-		event.stadata(isac).stel = sac.STEL;
-		event.stadata(isac).dist = deg2km(distance(sac.STLA,sac.STLO,sac.EVLA,sac.EVLO));
 		days = (datenum(sac.NZYEAR-1,12,31)+sac.NZJDAY-datenum(1970,1,1));
 		otime = days*24*3600 + sac.NZHOUR*3600+sac.NZMIN*60+sac.NZSEC+sac.NZMSEC/1000;
-		event.stadata(isac).otime = otime+sac.B;
-		event.stadata(isac).delta = sac.DELTA;
-		event.stadata(isac).data = sac.DATA1;
+		% initial the event information by the first sac file
 		if isac == 1
 			event.evla = sac.EVLA;
 			event.evlo = sac.EVLO;
 			event.otime = otime;
+			event.dbpath = datapath;
+		end
+		% build up event.stadata structure
+		event.stadata(isac).stla = sac.STLA;
+		event.stadata(isac).stlo = sac.STLO;
+		event.stadata(isac).stel = sac.STEL;
+		event.stadata(isac).dist = deg2km(distance(sac.STLA,sac.STLO,sac.EVLA,sac.EVLO));
+		event.stadata(isac).otime = otime+sac.B;
+		event.stadata(isac).delta = sac.DELTA;
+		event.stadata(isac).data = sac.DATA1;
+		event.stadata(isac).cmp = sac.KCMPNM;
+		event.stadata(isac).stnm = sac.KSTNM;
+		event.stadata(isac).filename = sacfilename;
+		if sac.DELTA == 1
+			event.stadata(isac).cmp = 'LHZ';
 		end
 	end
 	matfilename = [outpath,char(eventids(ie))];
