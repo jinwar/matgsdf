@@ -18,19 +18,24 @@ if ~exist('center_freq')
     center_freq = 0.025;
 end
 
+cycle_before = 2;
+cycle_after = 5;
+
 peakamptol = 0.5;   % the ratio of accepted peak compare to the largest peak
 peak_search_range = 1;
-groupv_diff_tol = 0.1;
+groupv_diff_tol = 0.15;
+positive_disp_weight = 5;
+
 
 minf = 1/periods(end);
 maxf = 1/periods(1);
 freqs = linspace(minf,maxf,bandnum);
 [temp center_freq_index] = min(abs(freqs - center_freq));
 
-isdebug = 1;
+isdebug =1;
 
-% for ista = 1:length(event.stadata)
- for ista = 6
+for ista = 1:length(event.stadata)
+%  for ista = 20
     ista
     % set up time axis
     bgtime = event.stadata(ista).otime - event.otime;
@@ -89,6 +94,7 @@ isdebug = 1;
     ip = center_freq_index;
     [temp ind] = max(peaks(ip).peakamps);
     peaks(ip).bestpeak = peaks(ip).peaktimes(ind);
+    peaks(ip).bestpeaksnr = peaks(ip).peakamps(ind)/sum([peaks(ip).peakamps]);
     % To the lower frequency bands
     for ip=center_freq_index-1:-1:1  % loop for lower frequencies
         [temp closest_peak_i] = min(abs(peaks(ip+1).bestpeak - peaks(ip).peaktimes));
@@ -108,10 +114,12 @@ isdebug = 1;
             end % end for check ipeak vavid
         end % end of loop ipeak
         peaks(ip).bestpeak = peaks(ip).peaktimes(bestpeaki);
+        peaks(ip).bestpeaksnr = peaks(ip).peakamps(bestpeaki)/sum([peaks(ip).peakamps]);
         groupvi = event.stadata(ista).dist / peaks(ip).peaktimes(bestpeaki);
         if groupvi < groupV0*(1-groupv_diff_tol) || ...
                 groupvi > groupV0*(1+groupv_diff_tol)
             peaks(ip).bestpeak = peaks(ip+1).bestpeak;
+            peaks(ip).bestpeaksnr = 0;
         end
     end % end of loop ip
     % To the higher frequency bands
@@ -122,10 +130,10 @@ isdebug = 1;
         groupvi = event.stadata(ista).dist / peaks(ip).peaktimes(bestpeaki);
         groupV0 = event.stadata(ista).dist / peaks(ip-1).bestpeak;
         if groupvi/groupV0 > 1
-            v_point = 1-(groupvi/groupV0-1)*10;
+            v_point = 1-(groupvi/groupV0-1)/groupv_diff_tol;
         else
             % double the weight for having a positive dispersion curve
-            v_point = 1-(1-groupvi/groupV0)*3;
+            v_point = 1-(1-groupvi/groupV0)/groupv_diff_tol/positive_disp_weight;
         end
         best_sum_point = amp_point + v_point;
         for ipeak = closest_peak_i-peak_search_range:closest_peak_i+peak_search_range
@@ -138,8 +146,9 @@ isdebug = 1;
                         v_point = 1-(groupvi/groupV0-1)*10;
                     else
                         % double the weight for having a positive dispersion curve
-                        v_point = 1-(1-groupvi/groupV0)*3;
+                        v_point = 1-(1-groupvi/groupV0)*10/positive_disp_weight;
                     end
+%                     disp([num2str(ip),':',num2str(amp_point),',',num2str(v_point)]);
                     if amp_point + v_point > best_sum_point
                         bestpeaki = ipeak;
                         best_sum_point = amp_point + v_point;
@@ -148,14 +157,16 @@ isdebug = 1;
             end % end for check ipeak vavid
         end % end of loop ipeak
         peaks(ip).bestpeak = peaks(ip).peaktimes(bestpeaki);
+        peaks(ip).bestpeaksnr = peaks(ip).peakamps(bestpeaki)/sum([peaks(ip).peakamps]);
         groupvi = event.stadata(ista).dist / peaks(ip).peaktimes(bestpeaki);
         if groupvi < groupV0*(1-groupv_diff_tol) || ...
                 groupvi > groupV0*(1+groupv_diff_tol)
             peaks(ip).bestpeak = peaks(ip-1).bestpeak;
+            peaks(ip).bestpeaksnr = 0;
         end
     end % end of loop ip
     
-    if isdebug
+    if 0
         for ip = 1:length(freqs)
             norm_envelop(:,ip) = envelop_nbands(:,ip) / max(envelop_nbands(:,ip));
         end
@@ -170,13 +181,28 @@ isdebug = 1;
         for ip = 1:length(freqs)
             plot(peaks(ip).peaktimes,ones(size(peaks(ip).peaktimes))*freqs(ip),'r.','markersize',15);
         end
-        
-        pause
     end
     
     % record the group delay
     groupdelay(:,ista) = [peaks(:).bestpeak]';
+    snr(:,ista) = [peaks(:).bestpeaksnr]';
 end % end of loop sta
-winpara = groupdelay;
-
+dist = [event.stadata(:).dist];
+for ip = 1:length(freqs)
+    ip
+    para = wpolyfit(dist,groupdelay(ip,:),snr(ip,:),1);
+    groupv(ip) = 1/para(1);
+    offset(ip) = para(2);
+    if isdebug
+        figure(38)
+        clf
+        hold on
+        plot(dist,groupdelay(ip,:),'x');
+        plot([min(dist),max(dist)],...
+            [min(dist)/groupv(ip)+offset(ip),max(dist)/groupv(ip)+offset(ip)])
+        title(['V:',num2str(groupv(ip)),' t:',num2str(offset(ip))]);
+        pause
+    end
+end % end of ip
+winpara = groupv;
 end % end of function
