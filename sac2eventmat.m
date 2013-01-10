@@ -5,7 +5,7 @@
 clear;
 
 dbpath = './sacdata/';
-eventfile = 'testevent';
+eventfile = 'allevent';
 outpath = './eventmat/';
 
 if ~exist(outpath)

@@ -18,12 +18,12 @@ if ~exist('center_freq')
     center_freq = 0.025;
 end
 
-cycle_before = 2;
+cycle_before = 1;
 cycle_after = 5;
 
 peakamptol = 0.5;   % the ratio of accepted peak compare to the largest peak
 peak_search_range = 1;
-groupv_diff_tol = 0.15;
+groupv_diff_tol = 0.2;
 positive_disp_weight = 5;
 
 
@@ -35,8 +35,7 @@ freqs = linspace(minf,maxf,bandnum);
 isdebug =1;
 
 for ista = 1:length(event.stadata)
-%  for ista = 20
-    ista
+    %  for ista = 20
     % set up time axis
     bgtime = event.stadata(ista).otime - event.otime;
     dt = event.stadata(ista).delta;
@@ -148,7 +147,7 @@ for ista = 1:length(event.stadata)
                         % double the weight for having a positive dispersion curve
                         v_point = 1-(1-groupvi/groupV0)*10/positive_disp_weight;
                     end
-%                     disp([num2str(ip),':',num2str(amp_point),',',num2str(v_point)]);
+                    %                     disp([num2str(ip),':',num2str(amp_point),',',num2str(v_point)]);
                     if amp_point + v_point > best_sum_point
                         bestpeaki = ipeak;
                         best_sum_point = amp_point + v_point;
@@ -166,7 +165,61 @@ for ista = 1:length(event.stadata)
         end
     end % end of loop ip
     
+    
+    
+    % record the group delay
+    groupdelay(:,ista) = [peaks(:).bestpeak]';
+    snr(:,ista) = [peaks(:).bestpeaksnr]';
+    if isdebug
+        stadata(ista).peaks = peaks;
+        stadata(ista).envelop_nbands = envelop_nbands;
+    end
+end % end of loop sta
+dist = [event.stadata(:).dist];
+for ip = 1:length(freqs)
+    [groupv(ip) offset(ip)] = groupv_fit(dist,groupdelay(ip,:),snr(ip,:),mingroupv,maxgroupv);
     if 0
+        figure(38)
+        clf
+        hold on
+        plot(dist,groupdelay(ip,:),'x');
+        plot([min(dist),max(dist)],...
+            [min(dist)/groupv(ip)+offset(ip),max(dist)/groupv(ip)+offset(ip)])
+        title(['V:',num2str(groupv(ip)),' t:',num2str(offset(ip))]);
+        pause
+    end
+end % end of ip
+winpara = groupv;
+clear bgtime endtime
+for ista = 1:length(event.stadata)
+    peaktimes = dist(ista)./groupv + offset;
+    bgtimes = peaktimes - cycle_before./freqs;
+    endtimes = peaktimes + cycle_after./freqs;
+    bgtime(ista) = min(bgtimes);
+    endtime(ista) = max(endtimes);
+end
+
+if 0
+    figure(39)
+    clf
+    hold on
+    plot(dist,bgtime,'o');
+    plot(dist,endtime,'ro');
+end
+para = polyfit(dist,bgtime,1);
+v1 = 1/para(1);
+t1 = para(2);
+para = polyfit(dist,endtime,1);
+v2 = 1/para(1);
+t2 = para(2);
+winpara = [v1,t1,v2,t2];
+if isdebug
+    for ista = 1:length(event.stadata)
+        envelop_nbands = stadata(ista).envelop_nbands;
+        peaks = stadata(ista).peaks;
+        if isempty(envelop_nbands)
+            continue;
+        end
         for ip = 1:length(freqs)
             norm_envelop(:,ip) = envelop_nbands(:,ip) / max(envelop_nbands(:,ip));
         end
@@ -181,28 +234,14 @@ for ista = 1:length(event.stadata)
         for ip = 1:length(freqs)
             plot(peaks(ip).peaktimes,ones(size(peaks(ip).peaktimes))*freqs(ip),'r.','markersize',15);
         end
-    end
-    
-    % record the group delay
-    groupdelay(:,ista) = [peaks(:).bestpeak]';
-    snr(:,ista) = [peaks(:).bestpeaksnr]';
-end % end of loop sta
-dist = [event.stadata(:).dist];
-for ip = 1:length(freqs)
-    ip
-    para = wpolyfit(dist,groupdelay(ip,:),snr(ip,:),1);
-    groupv(ip) = 1/para(1);
-    offset(ip) = para(2);
-    if isdebug
-        figure(38)
-        clf
-        hold on
-        plot(dist,groupdelay(ip,:),'x');
-        plot([min(dist),max(dist)],...
-            [min(dist)/groupv(ip)+offset(ip),max(dist)/groupv(ip)+offset(ip)])
-        title(['V:',num2str(groupv(ip)),' t:',num2str(offset(ip))]);
+        bgt = dist(ista)/v1+t1;
+        endt = dist(ista)/v2+t2;
+        plot([bgt bgt],[freqs(1) freqs(end)],'r','linewidth',3);
+        plot([endt endt],[freqs(1) freqs(end)],'r','linewidth',3);
+        
+        xlim([dist(ista)/maxgroupv, dist(ista)/mingroupv])
         pause
     end
-end % end of ip
-winpara = groupv;
+end
+
 end % end of function
