@@ -5,6 +5,8 @@ function winpara = auto_win_select(event,periods,mingroupv,maxgroupv,bandnum,cen
 % v2 = winpara(3); t2 = winpara(4);
 % and the window is defined by L/v1+t1 -- L/v2+t2
 
+isdebug = 0;
+
 if ~exist('mingroupv')
     mingroupv = 2;
 end
@@ -20,12 +22,15 @@ end
 
 cycle_before = 1;
 cycle_after = 5;
+min_dist_tol = deg2km(20);
+max_dist_tol = deg2km(160);
 
 peakamptol = 0.5;   % the ratio of accepted peak compare to the largest peak
 peak_search_range = 1;
 groupv_diff_tol = 0.2;
 positive_disp_weight = 5;
 min_sta_num = 10;
+bad_f_num_tol = bandnum*0.6;
 
 
 minf = 1/periods(end);
@@ -33,7 +38,14 @@ maxf = 1/periods(1);
 freqs = linspace(minf,maxf,bandnum);
 [temp center_freq_index] = min(abs(freqs - center_freq));
 
-isdebug =0;
+
+
+dist = [event.stadata(:).dist];
+if mean(dist) < min_dist_tol || mean(dist) > max_dist_tol
+    disp(['Event: ',event.dbpath,' is not in the proporal range']);
+    winpara = 0;
+    return;
+end
 
 good_sta_num = 0;
 for ista = 1:length(event.stadata)
@@ -65,8 +77,15 @@ for ista = 1:length(event.stadata)
     % remove the area out of window defined by min and max group velocity
     tmin = event.stadata(ista).dist/maxgroupv;
     tmax = event.stadata(ista).dist/mingroupv;
+    if tmax > 5500
+        tmax = 5500;
+    end
     if tmin < taxis(1) || tmax > taxis(end)
         disp(['Station ',event.stadata(ista).stnm,' does not contain enough data']);
+        if ista == length(event.stadata)
+            groupdelay(:,ista) = 0;
+            snr(:,ista) = 0;
+        end
         continue;
     end
     good_sta_num = good_sta_num+1;
@@ -99,6 +118,11 @@ for ista = 1:length(event.stadata)
     peaks(ip).bestpeaksnr = peaks(ip).peakamps(ind)/sum([peaks(ip).peakamps]);
     % To the lower frequency bands
     for ip=center_freq_index-1:-1:1  % loop for lower frequencies
+        if isempty(peaks(ip).peaktimes)
+            peaks(ip).bestpeak = peaks(ip+1).bestpeak;
+            peaks(ip).bestpeaksnr = 0;
+            continue;
+        end
         [temp closest_peak_i] = min(abs(peaks(ip+1).bestpeak - peaks(ip).peaktimes));
         bestpeaki = closest_peak_i;
         bestpeakamp = peaks(ip).peakamps(bestpeaki);
@@ -126,6 +150,11 @@ for ista = 1:length(event.stadata)
     end % end of loop ip
     % To the higher frequency bands
     for ip=center_freq_index+1:length(freqs)  % loop for higher frequencies
+        if isempty(peaks(ip).peaktimes)
+            peaks(ip).bestpeak = peaks(ip-1).bestpeak;
+            peaks(ip).bestpeaksnr = 0;
+            continue;
+        end
         [temp closest_peak_i] = min(abs(peaks(ip-1).bestpeak - peaks(ip).peaktimes));
         bestpeaki = closest_peak_i;
         amp_point = peaks(ip).peakamps(bestpeaki);
@@ -188,18 +217,8 @@ end
 dist = [event.stadata(:).dist];
 for ip = 1:length(freqs)
     [groupv(ip) offset(ip)] = groupv_fit(dist,groupdelay(ip,:),snr(ip,:),mingroupv,maxgroupv);
-    if 0
-        figure(38)
-        clf
-        hold on
-        plot(dist,groupdelay(ip,:),'x');
-        plot([min(dist),max(dist)],...
-            [min(dist)/groupv(ip)+offset(ip),max(dist)/groupv(ip)+offset(ip)])
-        title(['V:',num2str(groupv(ip)),' t:',num2str(offset(ip))]);
-        pause
-    end
 end % end of ip
-winpara = groupv;
+
 clear bgtime endtime
 for ista = 1:length(event.stadata)
     peaktimes = dist(ista)./groupv + offset;
@@ -252,6 +271,25 @@ if isdebug
         xlim([dist(ista)/maxgroupv, dist(ista)/mingroupv])
         pause
     end
+end
+if isdebug
+    for ip=1:length(freqs)
+        figure(38)
+        clf
+        hold on
+        plot(dist,groupdelay(ip,:),'x');
+        plot([min(dist),max(dist)],...
+            [min(dist)/groupv(ip)+offset(ip),max(dist)/groupv(ip)+offset(ip)])
+        title(['V:',num2str(groupv(ip)),' t:',num2str(offset(ip))]);
+        pause
+    end
+end
+
+bad_f_ind = find(groupv == mingroupv | groupv == maxgroupv);
+if length(bad_f_ind) > bad_f_num_tol
+    disp(['Event: ',event.dbpath, ' SNR is too low, skip!']);
+    winpara = 0;
+    return
 end
 
 end % end of function

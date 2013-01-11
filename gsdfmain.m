@@ -28,7 +28,8 @@ periods = sort(periods);  % make sure periods are ascending
 
 matfiles = dir([eventmatpath,'/*.mat']);
 %for ie = 1:length(matfiles)
-for ie = 1:2
+for ie = 1:length(matfiles)
+    
 	clear event csmeasure
 	% read in the events information
 	temp = load([eventmatpath,matfiles(ie).name]);
