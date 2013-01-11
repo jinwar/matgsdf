@@ -25,6 +25,7 @@ peakamptol = 0.5;   % the ratio of accepted peak compare to the largest peak
 peak_search_range = 1;
 groupv_diff_tol = 0.2;
 positive_disp_weight = 5;
+min_sta_num = 10;
 
 
 minf = 1/periods(end);
@@ -32,8 +33,9 @@ maxf = 1/periods(1);
 freqs = linspace(minf,maxf,bandnum);
 [temp center_freq_index] = min(abs(freqs - center_freq));
 
-isdebug =1;
+isdebug =0;
 
+good_sta_num = 0;
 for ista = 1:length(event.stadata)
     %  for ista = 20
     % set up time axis
@@ -67,6 +69,7 @@ for ista = 1:length(event.stadata)
         disp(['Station ',event.stadata(ista).stnm,' does not contain enough data']);
         continue;
     end
+    good_sta_num = good_sta_num+1;
     inwin_ind = find(taxis > tmin & taxis < tmax);
     outwin_ind = find(taxis < tmin | taxis > tmax);
     envelop_nbands=abs(nbands);
@@ -175,6 +178,13 @@ for ista = 1:length(event.stadata)
         stadata(ista).envelop_nbands = envelop_nbands;
     end
 end % end of loop sta
+
+if good_sta_num < min_sta_num
+    disp(['Event: ',event.dbpath, ' doesn''t have enough stations, skip!']);
+    winpara =0;
+    return
+end
+
 dist = [event.stadata(:).dist];
 for ip = 1:length(freqs)
     [groupv(ip) offset(ip)] = groupv_fit(dist,groupdelay(ip,:),snr(ip,:),mingroupv,maxgroupv);

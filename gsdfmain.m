@@ -28,7 +28,7 @@ periods = sort(periods);  % make sure periods are ascending
 
 matfiles = dir([eventmatpath,'/*.mat']);
 %for ie = 1:length(matfiles)
-for ie = 2:2
+for ie = 1:2
 	clear event csmeasure
 	% read in the events information
 	temp = load([eventmatpath,matfiles(ie).name]);
@@ -41,6 +41,8 @@ for ie = 2:2
 
 	% automatically select the signal window by using ftan method
 	winpara = auto_win_select(event,periods);
+    plot_win_select(event,periods,winpara);
+    pause
 
 	% start doing the cross-correlation
 	for ista = 1:length(event.stadata)
