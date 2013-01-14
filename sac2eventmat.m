@@ -31,6 +31,8 @@ for ie = 1:length(eventids)
 			event.evlo = sac.EVLO;
 			event.otime = otime;
 			event.dbpath = datapath;
+			event.id = char(eventids(ie));
+			event.otimestr = datestr(datenum(sac.NZYEAR-1,12,31,sac.NZHOUR,sac.NZMIN,sac.NZSEC)+sac.NZJDAY);
 		end
 		% build up event.stadata structure
 		event.stadata(isac).stla = sac.STLA;
