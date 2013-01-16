@@ -1,7 +1,10 @@
 function CS = CS_measure(event,sta1,sta2,parameters)
 % Main function to perform GSDF measurement
+%
+	isdebug = 0;
 
 	refv = parameters.refv;
+	refphv = parameters.refphv;
 	periods = parameters.periods;
 	min_width = parameters.min_width;
 	max_width = parameters.max_width;
@@ -9,7 +12,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	prefilter = parameters.prefilter;
 	xcor_win_halflength = parameters.xcor_win_halflength;
 	Nfit = parameters.Nfit;
-	isdebug = 0;
+	Ncircle = parameters.Ncircle;
 
 	v1 = event.winpara(1); t1=event.winpara(2); v2=event.winpara(3); t2=event.winpara(4);
 
@@ -128,6 +131,20 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		[para,resnorm,residual, exitflag] = gsdffit(nband_win_xcors(:,ip),lag,1./periods(ip),Nfit);
 		CS.fitpara(:,ip) = para(:);
 		CS.fiterr(ip) = resnorm./para(1)^2./Nfit./periods(ip);
+		CS.dtp(ip) = para(4);
+		CS.dtg(ip) = para(5);
+		CS.amp(ip) = para(1);
+		CS.w(ip) = para(2);
+		CS.sigma(ip) = para(3);
+		CS.exitflag(ip) = exitflag;
+	end
+
+	% Correct for cycle skipping for dtp
+	for ip = 1:length(periods)
+		syndtp = CS.ddist./refphv(ip);
+		testdtp = CS.dtp(ip) + [-Ncircle:Ncircle]*periods(ip);
+		[temp besti] = min(abs(testdtp - syndtp));
+		CS.dtp(ip) = testdtp(besti);
 	end
 
 end % end of function

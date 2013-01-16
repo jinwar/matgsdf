@@ -20,7 +20,7 @@ if ~exist('center_freq')
     center_freq = 0.025;
 end
 
-cycle_before = 1;
+cycle_before = 2;
 cycle_after = 5;
 min_dist_tol = deg2km(20);
 max_dist_tol = deg2km(160);
