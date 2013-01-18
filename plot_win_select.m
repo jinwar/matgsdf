@@ -61,3 +61,4 @@ plot([yrange/2],yrange,'k');
 ylim(yrange)
 xlim(trange)
 title(['Dist: ',num2str(mean(dist))]);
+drawnow;

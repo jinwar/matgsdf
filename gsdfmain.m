@@ -17,29 +17,17 @@
 clear;
 
 isdebug = 1;
+is_overwrite = 0;
 
 eventmatpath = './eventmat/';
 CSoutputpath = './CSmeasure/';
 
-if ~exist(CSoutputpath,'file')
+if ~exist(CSoutputpath,'dir')
 	mkdir(CSoutputpath)
 end
 
 % Setup parameters
-parameters.minstadist = 5;
-parameters.maxstadist = 200;
-parameters.periods = [20 25 32 40 50 60];
-parameters.refv = 4;
-parameters.refphv = ones(size(parameters.periods))*4;
-parameters.min_width = 0.06;
-parameters.max_width = 0.10;
-parameters.wintaperlength = 30;
-parameters.prefilter = [10,200];
-parameters.xcor_win_halflength = 100;
-parameters.Nfit = 2;
-parameters.Ncircle = 2;
-parameters.cohere_tol = 0.5;
-parameters.tp_tol = 10;
+setup_parameters
 
 % Setup Error Codes for Bad data
 setup_ErrorCode
@@ -50,18 +38,34 @@ minstadist = parameters.minstadist;
 maxstadist = parameters.maxstadist;
 
 matfiles = dir([eventmatpath,'/*.mat']);
-%for ie = 1:length(matfiles)
-for ie = 1
+for ie = 1:length(matfiles)
+%for ie = 100
     
-	clear event eventcs
+	clear event eventcs CS
 	% read in the events information
 	temp = load([eventmatpath,matfiles(ie).name]);
 	event = temp.event;
+
+	matfilename = [CSoutputpath,char(event.id),'_cs.mat'];
+	if ~is_overwrite && exist(matfilename,'file')
+		disp(['Found ',matfilename,', skip this event!']);
+		continue;
+	end
+	disp(['Start to work on event: ',event.id]);
 
 	% set up some useful arrays
 	stlas = [event.stadata(:).stla];
 	stlos = [event.stadata(:).stlo];
 	dists = [event.stadata(:).dist];
+
+	% check whether the stations are in the range
+	for ista = 1:length(event.stadata)
+		event.stadata(ista).isgood = 1;
+		if ~Is_inrange(stlas(ista),stlos(ista),parameters)
+			event.stadata(ista).isgood = ErrorCode.sta_outofrange;
+		end
+	end
+
 
 	% automatically select the signal window by using ftan method
 	winpara = auto_win_select(event,periods);
@@ -75,7 +79,15 @@ for ie = 1
 	% Calculate Auto-correlation
 	disp(['Calculating the auto-correlation of each station'])
 	for ista = 1:length(event.stadata)
-		event.autocor(ista) = CS_measure(event,ista,ista,parameters);
+		event.stadata(ista).isgood = 1;
+		autocor = CS_measure(event,ista,ista,parameters);
+		if ~isfield(autocor,'amp')
+			disp(['Station: ',event.stadata(ista).stnm,' doesn''t have enough data for this event!']);
+			event.stadata(ista).isgood = ErrorCode.sta_lackdata;
+			event.autocor(ista).sta1 = ista;
+		else
+			event.autocor(ista) = autocor;
+		end
 	end
 	
 
@@ -83,11 +95,14 @@ for ie = 1
 	csnum = 0;
 	disp(['Calculating cross-correlation between stations'])
 	for ista = 1:length(event.stadata)
+		if event.stadata(ista).isgood < 0;
+			continue;
+		end
 		% Find nearby stations
 		stadist = deg2km(distance(stlas(ista),stlos(ista),stlas,stlos));
 		nbstaids = find(stadist > minstadist & stadist < maxstadist);
 		for nbsta = nbstaids
-			if nbsta > ista
+			if nbsta > ista && event.stadata(nbsta).isgood > 0
 				% Build up Cross-Station Measurement structure
 				csnum = csnum+1;
 				if mod(csnum,10) == 0

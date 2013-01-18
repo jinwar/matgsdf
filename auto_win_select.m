@@ -88,6 +88,13 @@ for ista = 1:length(event.stadata)
         end
         continue;
     end
+	if event.stadata(ista).isgood < 0
+        if ista == length(event.stadata)
+            groupdelay(:,ista) = 0;
+            snr(:,ista) = 0;
+        end
+        continue;
+	end
     good_sta_num = good_sta_num+1;
     inwin_ind = find(taxis > tmin & taxis < tmax);
     outwin_ind = find(taxis < tmin | taxis > tmax);

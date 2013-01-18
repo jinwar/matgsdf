@@ -29,6 +29,11 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	data1 = filtfilt(b,a,data1);
 	taxis1 = bgtime + [0:Nt-1]'*dt1;
 	dist1 = event.stadata(sta1).dist;
+	winbgt = dist1/v1+t1;
+	winendt = dist1/v2+t2;
+	if taxis1(1) > winbgt || taxis1(end) < winendt 
+		return
+	end
 
 	% read in data for station 2 and apply prefilter
 	data2 = event.stadata(sta2).data;
@@ -40,6 +45,12 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	data2 = filtfilt(b,a,data2);
 	taxis2 = bgtime + [0:Nt-1]'*dt2;
 	dist2 = event.stadata(sta2).dist;
+	winbgt = dist2/v1+t1;
+	winendt = dist2/v2+t2;
+	if taxis2(1) > winbgt || taxis2(end) < winendt 
+		return
+	end
+
 	% resample the data if necessary
 	if dt1 > dt2
 		new_taxis2 = taxis2(1):dt1:taxis2(end);
