@@ -4,6 +4,10 @@
 %
 clear
 
+% debug setting
+isfigure = 0;
+isdisp = 0;
+
 % input path
 eventcs_path = './CSmeasure/';
 % output path
@@ -68,11 +72,12 @@ tic
 toc
 
 csmatfiles = dir([eventcs_path,'/*cs.mat']);
-%for ie = 1:length(csmatfiles)
-for ie =1
+for ie = 1:length(csmatfiles)
+%for ie = 30
 
+	clear eventphv 
 	% read in data and set up useful variables
-	temp = load([eventcs_path,csmatfiles(ie).name])
+	temp = load([eventcs_path,csmatfiles(ie).name]);
 	eventcs =  temp.eventcs;
 	disp(eventcs.id)
 	evla = eventcs.evla;
@@ -92,6 +97,7 @@ for ie =1
 		end
 	end
 
+	clear rays
 	for ics = 1:length(eventcs.CS)
 		rays(ics,1) = eventcs.stlas(eventcs.CS(ics).sta1);
 		rays(ics,2) = eventcs.stlos(eventcs.CS(ics).sta1);
@@ -155,9 +161,15 @@ for ie =1
         phaseg=(A'*A)\(A'*rhs);
 	        
         % Iteratively down weight the measurement with high error
+		niter=0;
+		ind = find(diag(W)==0);
+		if isdisp
+			disp(['Before iteration'])
+			disp(['Good Measurement Number: ', num2str(length(diag(W))-length(ind))]);
+			disp(['Bad Measurement Number: ', num2str(length(ind))]);
+		end
         niter=1;
         while niter < 2
-            niter
             niter=niter+1;
             err = mat*phaseg - dt;
 			err = W*err;
@@ -172,8 +184,11 @@ for ie =1
                 end
             end
             ind = find(diag(W)==0);
-            disp(['Good Measurement Number: ', num2str(length(diag(W))-length(ind))]);
-            disp(['Bad Measurement Number: ', num2str(length(ind))]);
+			if isdisp
+				disp('After:')
+				disp(['Good Measurement Number: ', num2str(length(diag(W))-length(ind))]);
+				disp(['Bad Measurement Number: ', num2str(length(ind))]);
+			end
             
             % Rescale the smooth kernel
             NR=norm(F,1);
@@ -198,6 +213,34 @@ for ie =1
             rhs=[W*dt;zeros(size(F,1),1);zeros(size(dumpmatT,1),1);dumpweightR*ones(size(dumpmatR,1),1)./avgv];
             phaseg=(A'*A)\(A'*rhs);
         end	
+
+        % Calculate the kernel density
+        %sumG=sum(abs(mat),1);
+        ind=1:Nx*Ny;
+        rayW = W;
+        rayW(find(rayW>1))=1;
+        raymat = rayW*mat;
+        sumG(ind)=sum((raymat(:,2*ind).^2+raymat(:,2*ind-1).^2).^.5,1);
+        clear raydense
+        for i=1:Nx
+            for j=1:Ny
+                n=Ny*(i-1)+j;
+                raydense(i,j)=sumG(n);
+            end
+        end
+        
+        %        disp(' Get rid of uncertainty area');
+        fullphaseg = phaseg;
+        for i=1:Nx
+            for j=1:Ny
+                n=Ny*(i-1)+j;
+                if raydense(i,j) < raydensetol %&& ~issyntest
+                    phaseg(2*n-1)=NaN;
+                    phaseg(2*n)=NaN;
+                end
+            end
+        end
+
 		% Change phaseg into phase velocity
 		for i=1:Nx
 			for j=1:Ny
@@ -206,20 +249,49 @@ for ie =1
 				GVy(i,j)= phaseg(2*n);
 			end
 		end
-
 		GV=(GVx.^2+GVy.^2).^-.5;
+		% Get rid of uncertain area
 
 		% save the result in the structure
-		eikoanl(ip).rays = rays;
-		eikonal(ip).w = diag(W);
-		eikonal(ip).goodnum = length(find(w>0));
-		eikonal(ip).badnum = length(find(w==0));
-		eikoanl(ip).dt = dt;
-		eikonal(ip).GV = GV;
-		eikonal(ip).xi = xi;
-		eikonal(ip).yi = yi;
-		eikonal(ip).lalim = lalim;
-		eikonal(ip).lolim = lolim;
-		eikonal(ip).gridsize = gridsize;
+		eventphv(ip).rays = rays;
+		eventphv(ip).w = diag(W);
+		eventphv(ip).goodnum = length(find(w>0));
+		eventphv(ip).badnum = length(find(w==0));
+		eventphv(ip).dt = dt;
+		eventphv(ip).GV = GV;
+		eventphv(ip).raydense = raydense;
+		eventphv(ip).lalim = lalim;
+		eventphv(ip).lolim = lolim;
+		eventphv(ip).gridsize = gridsize;
+		eventphv(ip).id = eventcs.id;
 	end % end of periods loop
+	if isfigure
+		M=3; N=2;
+		figure(88)
+		clf
+		for ip = 1:length(eikonal)
+			subplot(M,N,ip)
+			ax = worldmap(lalim, lolim);
+			set(ax, 'Visible', 'off')
+			h1=surfacem(xi,yi,eikonal(ip).GV);
+			% set(h1,'facecolor','interp');
+			load pngcoastline
+			geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+			title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+			avgv = nanmean(eikonal(ip).GV(:));
+			if isnan(avgv)
+				continue;
+			end
+			r = 0.1;
+			caxis([avgv*(1-r) avgv*(1+r)])
+			colorbar
+			load seiscmap
+			colormap(seiscmap)
+		end
+		drawnow;
+
+	end
+	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal.mat'];
+	save(matfilename,'eventphv');
+	disp(['Save the result to: ',matfilename])
 end % end of loop ie
