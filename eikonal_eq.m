@@ -34,6 +34,7 @@ fiterrtol = parameters.fiterrtol;
 dterrtol = parameters.dterrtol;
 isRsmooth = parameters.isRsmooth;
 inverse_err_tol = parameters.inverse_err_tol;
+min_amp_tol  = parameters.min_amp_tol;
 
 % setup useful variables
 xnode=lalim(1):gridsize:lalim(2);
@@ -71,6 +72,11 @@ tic
     end
 toc
 
+% read in bad station list, if existed
+if exist('badsta.lst')
+	badstnms = textread('badsta.lst','%s');
+end
+
 csmatfiles = dir([eventcs_path,'/*cs.mat']);
 for ie = 1:length(csmatfiles)
 %for ie = 30
@@ -82,6 +88,12 @@ for ie = 1:length(csmatfiles)
 	disp(eventcs.id)
 	evla = eventcs.evla;
 	evlo = eventcs.evlo;
+
+	if exist('badstnms','var')
+		badstaids = find(ismember(eventcs.stnms,badstnms));
+	else
+		badstaids = [];
+	end
 
 	% Build the rotation matrix
 	razi = azimuth(xi+gridsize/2,yi+gridsize/2,evla,evlo)+180;
@@ -122,11 +134,14 @@ for ie = 1:length(csmatfiles)
 		dt = zeros(length(eventcs.CS),1);
 		w = zeros(length(eventcs.CS),1);
 		for ics = 1:length(eventcs.CS)
-			if eventcs.CS(ics).isgood(ip) > 0
+			if eventcs.CS(ics).isgood(ip) > 0 
 				dt(ics) = eventcs.CS(ics).dtp(ip);
 				w(ics) = 1;
 			else
 				dt(ics) = 0;
+				w(ics) = 0;
+			end
+			if sum(ismember([eventcs.CS(ics).sta1 eventcs.CS(ics).sta2],badstaids)) > 0
 				w(ics) = 0;
 			end
 		end

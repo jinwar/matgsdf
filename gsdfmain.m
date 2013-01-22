@@ -17,7 +17,7 @@
 clear;
 
 isdebug = 1;
-is_overwrite = 0;
+is_overwrite = 1;
 
 eventmatpath = './eventmat/';
 CSoutputpath = './CSmeasure/';
@@ -56,6 +56,7 @@ for ie = 1:length(matfiles)
 	% set up some useful arrays
 	stlas = [event.stadata(:).stla];
 	stlos = [event.stadata(:).stlo];
+	stnms = {event.stadata(:).stnm};
 	dists = [event.stadata(:).dist];
 
 	% check whether the stations are in the range
@@ -181,6 +182,7 @@ for ie = 1:length(matfiles)
 	eventcs.avgphv = avgphv;
 	eventcs.stlas = stlas;
 	eventcs.stlos = stlos;
+	eventcs.stnms = stnms;
 	eventcs.evla = event.evla;
 	eventcs.evlo = event.evlo;
 	eventcs.dists = dists;

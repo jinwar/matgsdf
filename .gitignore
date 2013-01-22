@@ -2,5 +2,6 @@ sacdata
 eventmat
 CSmeasure
 eikonal
+*.lst
 *.m~
 *.mat
