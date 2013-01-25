@@ -2,6 +2,7 @@
 
 % parameters for the gsdfmain.m
 %
+parameters.is_rm_resp = 1;
 parameters.minstadist = 5;
 parameters.maxstadist = 200;
 parameters.periods = [20 25 32 40 50 60 80 100];
@@ -16,7 +17,6 @@ parameters.Nfit = 2;
 parameters.Ncircle = 2;
 parameters.cohere_tol = 0.5;
 parameters.tp_tol = 10;
-
 
 % parameters for the tomography
 %

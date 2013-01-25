@@ -3,7 +3,7 @@
 
 
 % making cross-correlation measurement
-%gsdfmain
+gsdfmain
 
 % calculating eikonal tomography for each event
 eikonal_eq

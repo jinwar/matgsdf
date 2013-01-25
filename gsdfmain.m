@@ -17,7 +17,7 @@
 clear;
 
 isdebug = 1;
-is_overwrite = 1;
+is_overwrite = 0;
 
 eventmatpath = './eventmat/';
 CSoutputpath = './CSmeasure/';
@@ -36,6 +36,13 @@ parameters.periods = sort(parameters.periods);  % make sure periods are ascendin
 periods = parameters.periods;
 minstadist = parameters.minstadist;
 maxstadist = parameters.maxstadist;
+is_rm_resp = parameters.is_rm_resp;
+
+respfile = 'staresp.mat';
+if is_rm_resp
+	temp = load(respfile);
+	staresp = temp.staresp;
+end
 
 matfiles = dir([eventmatpath,'/*.mat']);
 for ie = 1:length(matfiles)
@@ -59,6 +66,34 @@ for ie = 1:length(matfiles)
 	stnms = {event.stadata(:).stnm};
 	dists = [event.stadata(:).dist];
 
+	% remove instrument response if necessary
+	if is_rm_resp
+		resp_stanms = {staresp(:).staname};
+		for ista = 1:length(event.stadata)
+			resp_staid = find(ismember(resp_stanms,stnms(3)));
+			respN = length(staresp(resp_staid).resp);
+			if mod(respN,2) == 0
+				resp_faxis = [0:respN/2,-respN/2+1:-1]/respN/staresp(resp_staid).dtr;  % only works for even data points
+			else
+				resp_faxis = [0:floor(respN/2),-floor(respN/2)+1:-1]/respN/staresp(resp_staid).dtr;  % only works for even data points
+			end
+			dataN = length(event.stadata(ista).data);
+			if mod(dataN,2) == 0
+				data_faxis = [0:dataN/2,-dataN/2+1:-1]/dataN/event.stadata(ista).delta;  
+			else
+				data_faxis = [0:floor(dataN/2),-floor(dataN/2):-1]/dataN/event.stadata(ista).delta;  
+			end
+			resp = interp1(resp_faxis,staresp(resp_staid).resp,data_faxis);
+			fftdata = fft(event.stadata(ista).data);
+			fftdata = fftdata.*resp(:);    % the resp has already been inversed in the input data.
+%			event.stadata(ista).odata = event.stadata(ista).data;
+			event.stadata(ista).data = real(ifft(fftdata));
+		end
+	end
+	
+
+
+
 	% check whether the stations are in the range
 	for ista = 1:length(event.stadata)
 		event.stadata(ista).isgood = 1;
@@ -66,7 +101,6 @@ for ie = 1:length(matfiles)
 			event.stadata(ista).isgood = ErrorCode.sta_outofrange;
 		end
 	end
-
 
 	% automatically select the signal window by using ftan method
 	winpara = auto_win_select(event,periods);
