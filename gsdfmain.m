@@ -32,7 +32,6 @@ setup_parameters
 % Setup Error Codes for Bad data
 setup_ErrorCode
 
-parameters.periods = sort(parameters.periods);  % make sure periods are ascending
 periods = parameters.periods;
 minstadist = parameters.minstadist;
 maxstadist = parameters.maxstadist;
@@ -91,9 +90,6 @@ for ie = 1:length(matfiles)
 		end
 	end
 	
-
-
-
 	% check whether the stations are in the range
 	for ista = 1:length(event.stadata)
 		event.stadata(ista).isgood = 1;
