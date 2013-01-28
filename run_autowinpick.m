@@ -26,6 +26,7 @@ for ie = 1:length(matfiles)
 	% read in the events information
 	temp = load([eventmatpath,matfiles(ie).name]);
 	event = temp.event;
+	disp(event.id)
 
 	if ~is_overwrite
 		filename = [outwinpath,'/',event.id,'.bad'];
