@@ -1,7 +1,7 @@
 % Scripts to run the auto_win_pick function for all the events and generate a old version "events" file
 clear;
 
-isdebug = 0;
+isdebug = 1;
 is_overwrite = 0;
 
 eventmatpath = './eventmat/';
@@ -65,12 +65,12 @@ for ie = 1:length(matfiles)
 	if length(winpara) ~= 4
 		filename = [outwinpath,'/',event.id,'.bad'];
 		fp = fopen(filename,'w');
-		fprintf(fp,'%f',0);
+		fprintf(fp,'%f\n',0);
 		fclose(fp);
 		continue;
 	end
 	filename = [outwinpath,'/',event.id,'.win'];
 	fp = fopen(filename,'w');
-	fprintf(fp,'%s %f %f %f %f',event.id,winpara(1),winpara(2),winpara(3),winpara(4));
+	fprintf(fp,'%s %f %f %f %f\n',event.id,winpara(1),winpara(2),winpara(3),winpara(4));
 	fclose(fp);
 end % end of event
