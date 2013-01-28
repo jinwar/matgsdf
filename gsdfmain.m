@@ -103,7 +103,10 @@ for ie = 1:length(matfiles)
 	end
 
 	% automatically select the signal window by using ftan method
+	disp('Start to picking the window');
+	tic
 	winpara = auto_win_select(event,periods);
+	toc
     plot_win_select(event,periods,winpara);
 	if length(winpara) ~= 4
 		continue;

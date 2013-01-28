@@ -5,7 +5,7 @@
 clear;
 
 dbpath = './sacdata/';
-eventfile = 'allevent';
+eventfile = 'event2006.lst';
 outpath = './eventmat/';
 
 if ~exist(outpath)
@@ -18,7 +18,7 @@ for ie = 1:length(eventids)
 	clear event
 	datapath = [dbpath, char(eventids(ie)),'/'];
 	disp(datapath);
-	saclist = dir([datapath,'*.sac']);
+	saclist = dir([datapath,'*TA*.sac']);
 	for isac = 1:length(saclist)
 		% read sac file
 		sacfilename = [datapath,saclist(isac).name];

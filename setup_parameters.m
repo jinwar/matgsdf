@@ -2,7 +2,7 @@
 
 % parameters for the gsdfmain.m
 %
-parameters.is_rm_resp = 1;
+parameters.is_rm_resp = 0;
 parameters.minstadist = 5;
 parameters.maxstadist = 200;
 parameters.periods = [20 25 32 40 50 60 80 100];
