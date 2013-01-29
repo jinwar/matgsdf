@@ -5,7 +5,7 @@
 clear
 
 % debug setting
-isfigure = 1;
+isfigure = 0;
 isdisp = 0;
 
 % input path
