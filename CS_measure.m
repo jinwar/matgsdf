@@ -2,6 +2,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 % Main function to perform GSDF measurement
 %
 	isdebug = 0;
+    isfigure = 0;
 
 	refv = parameters.refv;
 	refphv = parameters.refphv;
@@ -18,6 +19,9 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 
 	CS.sta1 = sta1;
 	CS.sta2 = sta2;
+    if isdebug
+        disp([num2str(sta1),num2str(sta2)]);
+    end
 
 	% read in data for station 1 and apply prefilter
 	data1 = event.stadata(sta1).data;
@@ -70,11 +74,12 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	win_data2 = flat_hanning_win(taxis2,data2,winbgt,winendt,wintaperlength);
 
 	% apply cross-correlation
-	[xcor,lag] = xcorr(data1,win_data2,10*max(periods)/dt1);
+	[xcor,lag] = xcorr(data1,win_data2,...
+        floor(10*max(periods)/dt1+abs(taxis1(1)-taxis2(1))));
 	lag = lag.*dt1;
 	lag = lag + taxis1(1) - taxis2(1);
 
-	if isdebug
+	if isfigure
 		figure(43)
 		clf
 		subplot(3,1,1)
@@ -100,7 +105,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	% apply the window function
 	win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
 
-	if isdebug
+	if isfigure
 		figure(44)
 		clf
 		subplot(2,1,1)
@@ -126,7 +131,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		nband_win_xcors(:,ip) = nband;
 	end % end of periods loop
 
-	if isdebug
+	if isfigure
 		figure(45)
 		clf
 		[xi yi] = ndgrid(lag,periods);

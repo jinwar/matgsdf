@@ -118,6 +118,7 @@ for ie = 1:length(matfiles)
 			event.winpara = winpara;
 		else
 			disp(['No window parawin file for event:',event.id]);
+            continue;
 		end
 	end
 
