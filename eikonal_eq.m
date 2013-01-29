@@ -5,7 +5,7 @@
 clear
 
 % debug setting
-isfigure = 0;
+isfigure = 1;
 isdisp = 0;
 
 % input path
@@ -281,19 +281,19 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).id = eventcs.id;
 	end % end of periods loop
 	if isfigure
-		M=3; N=2;
+		N=3; M = floor(length(periods)/N) +1;
 		figure(88)
 		clf
-		for ip = 1:length(eikonal)
+		for ip = 1:length(periods)
 			subplot(M,N,ip)
 			ax = worldmap(lalim, lolim);
 			set(ax, 'Visible', 'off')
-			h1=surfacem(xi,yi,eikonal(ip).GV);
+			h1=surfacem(xi,yi,eventphv(ip).GV);
 			% set(h1,'facecolor','interp');
-			load pngcoastline
-			geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+%			load pngcoastline
+%			geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 			title(['Periods: ',num2str(periods(ip))],'fontsize',15)
-			avgv = nanmean(eikonal(ip).GV(:));
+			avgv = nanmean(eventphv(ip).GV(:));
 			if isnan(avgv)
 				continue;
 			end
@@ -304,7 +304,6 @@ for ie = 1:length(csmatfiles)
 			colormap(seiscmap)
 		end
 		drawnow;
-
 	end
 	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal.mat'];
 	save(matfilename,'eventphv');
