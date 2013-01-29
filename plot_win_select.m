@@ -15,8 +15,11 @@ figure(1)
 clf
 hold on
 
-amp = 10;
-dist = [event.stadata(:).dist];
+amp = 0.4;
+isgood = [event.stadata(:).isgood];
+goodind = find(isgood > 0);
+dist = [event.stadata(goodind).dist];
+amp = (max(dist)-min(dist))/10*amp;
 yrange = [ min(dist)-2*amp max(dist)+2*amp ];
 trange = [ mean(dist)/5*0.8  mean(dist)/2*1.2 ];
 trange = [ 0  mean(dist)/2*1.2 ];
@@ -24,6 +27,9 @@ trange = [ 0  mean(dist)/2*1.2 ];
 for ista = 1:length(event.stadata)
     %  for ista = 20
     % set up time axis
+	if event.stadata(ista).isgood < 0
+		continue;
+	end
     bgtime = event.stadata(ista).otime - event.otime;
     dt = event.stadata(ista).delta;
     Nt = length(event.stadata(ista).data);
@@ -33,7 +39,7 @@ for ista = 1:length(event.stadata)
     [b,a] = butter(2,[minf/fN, maxf/fN]);
     data = filtfilt(b,a,data);
 	data =  data./max(abs(data));
-	plot(taxis,data*amp+dist(ista));
+	plot(taxis,data*amp+event.stadata(ista).dist);
     
     [gausf,faxis] = build_gaus_filter(freqs,dt,Nt,0.06,0.1);
         % get original data and make the fourier transform
@@ -49,7 +55,7 @@ for ista = 1:length(event.stadata)
         nband = fftodata .* [gausf(:,ip); zeros(Nt-length(gausf(:,ip)),1)];
         nband = ifft(nband);
         norm_nband = abs(nband)./max(abs(nband));
-        plot(taxis,norm_nband*amp+dist(ista),'k');
+        plot(taxis,norm_nband*amp+event.stadata(ista).dist,'k');
     end % end of loop ip
 end % end of loop sta
 if length(winpara)==4

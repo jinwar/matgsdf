@@ -18,7 +18,6 @@ clear;
 
 isdebug = 1;
 is_overwrite = 0;
-is_winpick = 0;
 
 eventmatpath = './eventmat/';
 CSoutputpath = './CSmeasure/';
@@ -92,34 +91,10 @@ for ie = 1:length(matfiles)
 		end
 	end
 	
-	% check whether the stations are in the range
-	for ista = 1:length(event.stadata)
-		event.stadata(ista).isgood = 1;
-		if ~Is_inrange(stlas(ista),stlos(ista),parameters)
-			event.stadata(ista).isgood = ErrorCode.sta_outofrange;
-		end
-	end
-
-	% automatically select the signal window by using ftan method
-	if is_winpick
-		disp('Start to picking the window');
-		winpara = auto_win_select(event,periods);
-		plot_win_select(event,periods,winpara);
-		if length(winpara) ~= 4
-			continue;
-		end
-		v1 = winpara(1); t1=winpara(2); v2=winpara(3); t2=winpara(4);
-		event.winpara = winpara;
-	else
-		filename = [winparapath,'/',event.id,'.win'];
-		if exist(filename,'file')
-			[temp v1 t1 v2 t2] = textread(filename,'%s %f %f %f %f\n');
-			winpara = [v1 t1 v2 t2];
-			event.winpara = winpara;
-		else
-			disp(['No window parawin file for event:',event.id]);
-            continue;
-		end
+	% find the win para files
+	if ~isfield(event,'winpara') || length(event.winpara) == 1
+		disp(['No win para information for event:',event.id]);
+		continue;
 	end
 
 

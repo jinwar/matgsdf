@@ -1,4 +1,4 @@
-function winpara = auto_win_select(event,periods,mingroupv,maxgroupv,bandnum,center_freq)
+function [winpara outevent] = auto_win_select(event,mingroupv,maxgroupv,bandnum,center_freq)
 % This function is used to automatically select the window range used for gsdf method.
 % The output format is
 % v1 = winpara(1); t1 = winpara(2);
@@ -6,6 +6,12 @@ function winpara = auto_win_select(event,periods,mingroupv,maxgroupv,bandnum,cen
 % and the window is defined by L/v1+t1 -- L/v2+t2
 
 isdebug = 0;
+
+setup_parameters
+setup_ErrorCode
+
+periods = parameters.periods;
+largest_epidist_range = parameters.largest_epidist_range;
 
 if ~exist('mingroupv')
     mingroupv = 2;
@@ -20,10 +26,10 @@ if ~exist('center_freq')
     center_freq = 0.025;
 end
 
-cycle_before = 2;
-cycle_after = 5;
-min_dist_tol = deg2km(20);
-max_dist_tol = deg2km(160);
+cycle_before = parameters.cycle_before;
+cycle_after = parameters.cycle_after;
+min_dist_tol = parameters.min_dist_tol;
+max_dist_tol = parameters.max_dist_tol;
 
 peakamptol = 0.5;   % the ratio of accepted peak compare to the largest peak
 peak_search_range = 1;
@@ -32,19 +38,53 @@ positive_disp_weight = 5;
 min_sta_num = 10;
 bad_f_num_tol = bandnum*0.6;
 
-
 minf = 1/periods(end);
 maxf = 1/periods(1);
 freqs = linspace(minf,maxf,bandnum);
 [temp center_freq_index] = min(abs(freqs - center_freq));
 
 
+% set up some useful arrays
+stlas = [event.stadata(:).stla];
+stlos = [event.stadata(:).stlo];
+stnms = {event.stadata(:).stnm};
+dists = [event.stadata(:).dist];
 
-dist = [event.stadata(:).dist];
+% check whether the stations are in the range
+for ista = 1:length(event.stadata)
+	event.stadata(ista).isgood = 1;
+	if ~Is_inrange(stlas(ista),stlos(ista),parameters)
+		event.stadata(ista).isgood = ErrorCode.sta_outofrange;
+	end
+end
+    
+% if the array is too large and sparse, select the major part of it.
+isgood = [event.stadata(:).isgood];
+goodind = find(isgood>0);
+dist = [event.stadata(goodind).dist];
 if mean(dist) < min_dist_tol || mean(dist) > max_dist_tol
     disp(['Event: ',event.dbpath,' is not in the proporal range']);
     winpara = 0;
+    outevent = event;
     return;
+end
+if max(dist) - min(dist) > largest_epidist_range
+	disp(['Too large array size, only use part of stations for window picking']);
+	distbin = min(dist):largest_epidist_range/10:max(dist);
+	[stanum,middist] = hist(dist,distbin);
+	% find the epicenter distance range contains most stations.
+	maxstanum = 0;
+	for ibin = 1:length(middist) - 10
+		sumstanum = sum(stanum(ibin:ibin+10));
+		if sumstanum > maxstanum
+			maxstanum = sumstanum;
+			maxibin = ibin;
+		end
+	end
+	distrange = [middist(maxibin)-largest_epidist_range/20,middist(maxibin+10)+largest_epidist_range/20];
+	dist = [event.stadata(:).dist];
+	outind = find(dist < distrange(1) | dist > distrange(2));
+	event.stadata(outind).isgood = ErrorCode.sta_outofepidist;
 end
 
 good_sta_num = 0;
@@ -292,11 +332,15 @@ if isdebug
     end
 end
 
+
 bad_f_ind = find(groupv == mingroupv | groupv == maxgroupv);
 if length(bad_f_ind) > bad_f_num_tol
     disp(['Event: ',event.dbpath, ' SNR is too low, skip!']);
     winpara = 0;
+    outevent = event;
     return
 end
+
+outevent = event;
 
 end % end of function

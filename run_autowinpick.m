@@ -19,7 +19,7 @@ setup_ErrorCode
 
 periods = parameters.periods;
 
-matfiles = dir([eventmatpath,'/*.mat']);
+matfiles = dir([eventmatpath,'/2007*.mat']);
 for ie = 1:length(matfiles)
 
 	clear event eventcs CS
@@ -47,18 +47,10 @@ for ie = 1:length(matfiles)
 	stnms = {event.stadata(:).stnm};
 	dists = [event.stadata(:).dist];
 
-	% check whether the stations are in the range
-	for ista = 1:length(event.stadata)
-		event.stadata(ista).isgood = 1;
-		if ~Is_inrange(stlas(ista),stlos(ista),parameters)
-			event.stadata(ista).isgood = ErrorCode.sta_outofrange;
-		end
-	end
-    
 	% automatically select the signal window by using ftan method
 	disp('Start to picking the window');
 	tic
-		winpara = auto_win_select(event,periods);
+		[winpara event] = auto_win_select(event);
 	toc
 	if isdebug
 		plot_win_select(event,periods,winpara);
@@ -74,4 +66,7 @@ for ie = 1:length(matfiles)
 	fp = fopen(filename,'w');
 	fprintf(fp,'%s %f %f %f %f\n',event.id,winpara(1),winpara(2),winpara(3),winpara(4));
 	fclose(fp);
+	event.winpara = winpara;
+	save([eventmatpath,matfiles(ie).name],'event');
+	
 end % end of event
