@@ -19,7 +19,7 @@ setup_ErrorCode
 
 periods = parameters.periods;
 
-matfiles = dir([eventmatpath,'/2007*.mat']);
+matfiles = dir([eventmatpath,'/*.mat']);
 for ie = 1:length(matfiles)
 
 	clear event eventcs CS
