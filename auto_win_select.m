@@ -5,7 +5,7 @@ function [winpara outevent] = auto_win_select(event,mingroupv,maxgroupv,bandnum,
 % v2 = winpara(3); t2 = winpara(4);
 % and the window is defined by L/v1+t1 -- L/v2+t2
 
-isdebug = 0;
+isdebug = 1;
 
 setup_parameters
 setup_ErrorCode
@@ -244,8 +244,13 @@ for ista = 1:length(event.stadata)
         end
     end % end of loop ip
     
-    
-    
+    for ip=1:length(freqs)
+        if isempty(peaks(ip).bestpeak)
+            peaks(ip).bestpeak = 0;
+            peaks(ip).bestpeaksnr = 0;
+        end
+    end
+
     % record the group delay
     groupdelay(:,ista) = [peaks(:).bestpeak]';
     snr(:,ista) = [peaks(:).bestpeaksnr]';
@@ -275,21 +280,23 @@ for ista = 1:length(event.stadata)
     endtime(ista) = max(endtimes);
 end
 
-if 0
+if 1
     figure(39)
     clf
     hold on
     plot(dist,bgtime,'o');
     plot(dist,endtime,'ro');
 end
-para = polyfit(dist,bgtime,1);
+isgood = [event.stadata(:).isgood];
+goodind = find(isgood > 0);
+para = polyfit(dist(goodind),bgtime(goodind),1);
 v1 = 1/para(1);
 t1 = para(2);
-para = polyfit(dist,endtime,1);
+para = polyfit(dist(goodind),endtime(goodind),1);
 v2 = 1/para(1);
 t2 = para(2);
 winpara = [v1,t1,v2,t2];
-if isdebug
+if 0
     for ista = 1:length(event.stadata)
         envelop_nbands = stadata(ista).envelop_nbands;
         peaks = stadata(ista).peaks;
@@ -319,7 +326,7 @@ if isdebug
         pause
     end
 end
-if isdebug
+if 0
     for ip=1:length(freqs)
         figure(38)
         clf
@@ -331,7 +338,6 @@ if isdebug
         pause
     end
 end
-
 
 bad_f_ind = find(groupv == mingroupv | groupv == maxgroupv);
 if length(bad_f_ind) > bad_f_num_tol

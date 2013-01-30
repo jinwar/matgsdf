@@ -2,7 +2,7 @@
 
 % parameters for the auto_win_select.m
 parameters.largest_epidist_range = 3000;
-parameters.cycle_before = 1;
+parameters.cycle_before = 2;
 parameters.cycle_after = 5;
 parameters.min_dist_tol = deg2km(20);
 parameters.max_dist_tol = deg2km(160);
