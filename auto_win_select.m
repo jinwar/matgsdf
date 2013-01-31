@@ -84,7 +84,9 @@ if max(dist) - min(dist) > largest_epidist_range
 	distrange = [middist(maxibin)-largest_epidist_range/20,middist(maxibin+10)+largest_epidist_range/20];
 	dist = [event.stadata(:).dist];
 	outind = find(dist < distrange(1) | dist > distrange(2));
-	event.stadata(outind).isgood = ErrorCode.sta_outofepidist;
+	for iout = outind
+		event.stadata(iout).isgood = ErrorCode.sta_outofepidist;
+	end
 end
 
 good_sta_num = 0;
