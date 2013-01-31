@@ -4,6 +4,7 @@
 %
 clear;
 
+isoverwrite = 0;
 dbpath = './sacdata/';
 eventfile = 'eventlist';
 outpath = './eventmat/';
@@ -15,6 +16,11 @@ end
 eventids = textread([dbpath,eventfile],'%s');
 
 for ie = 1:length(eventids)
+	matfilename = [outpath,char(eventids(ie)),'.mat'];
+	if ~isoverwrite && exist(matfilename)
+		disp(['Exist ',matfilename,', Skip!']);
+		continue;
+	end
 	clear event
 	datapath = [dbpath, char(eventids(ie)),'/'];
 	disp(datapath);
