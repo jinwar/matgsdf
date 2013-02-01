@@ -7,4 +7,5 @@ ErrorCode.sta_fit_error  = -4;
 ErrorCode.sta_outofrange = -5;
 ErrorCode.sta_lackdata   = -6;
 ErrorCode.sta_outofepidist   = -7;
+ErrorCode.xcor_outofwin   = -8;
 
