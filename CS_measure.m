@@ -15,6 +15,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	Nfit = parameters.Nfit;
 	Ncircle = parameters.Ncircle;
 
+	CS = init_CSstruct;
 	v1 = event.winpara(1); t1=event.winpara(2); v2=event.winpara(3); t2=event.winpara(4);
 
 	CS.sta1 = sta1;
