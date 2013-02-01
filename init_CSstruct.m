@@ -14,6 +14,6 @@ function CS = init_CSstruct()
 	CS.amp = zeros(1,length(periods));
 	CS.w = zeros(1,length(periods));
 	CS.sigma = zeros(1,length(periods));
-	CS.exitflag = zeros(1,length(periods));
+	CS.exitflag = ones(1,length(periods))*-1;
 
 end

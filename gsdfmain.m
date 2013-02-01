@@ -127,7 +127,7 @@ for ie = 1:length(matfiles)
 			if nbsta > ista && event.stadata(nbsta).isgood > 0
 				% Build up Cross-Station Measurement structure
 				csnum = csnum+1;
-				if mod(csnum,10) == 0
+				if mod(csnum,100) == 0
 					disp(csnum);
 				end
 				CS(csnum) = CS_measure(event,ista,nbsta,parameters);
@@ -199,6 +199,7 @@ for ie = 1:length(matfiles)
 
 	% create eventcs structure and output
 	eventcs.CS = CS;
+	eventcs.autocor = event.autocor;
 	eventcs.id = event.id;
 	eventcs.avgphv = avgphv;
 	eventcs.stlas = stlas;
