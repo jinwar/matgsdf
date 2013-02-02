@@ -97,18 +97,28 @@ for ie = 1:length(matfiles)
 		continue;
 	end
 
+	% remove out of range stations
+	for ista = 1:length(event.stadata)
+		if event.stadata(ista).isgood > 0 &&...
+			~Is_inrange(stlas(ista),stlos(ista),parameters)
+			event.stadata(ista).isgood = ErrorCode.sta_outofrange;
+		end
+	end
 
 	% Calculate Auto-correlation
 	disp(['Calculating the auto-correlation of each station'])
 	for ista = 1:length(event.stadata)
-		event.stadata(ista).isgood = 1;
-		autocor = CS_measure(event,ista,ista,parameters);
-		if ~isfield(autocor,'amp')
-			disp(['Station: ',event.stadata(ista).stnm,' doesn''t have enough data for this event!']);
-			event.stadata(ista).isgood = ErrorCode.sta_lackdata;
-			event.autocor(ista).sta1 = ista;
+		if event.stadata(ista).isgood > 0
+			autocor = CS_measure(event,ista,ista,parameters);
+			if sum(autocor.amp) == 0
+				disp(['Station: ',event.stadata(ista).stnm,' doesn''t have enough data for this event!']);
+				event.stadata(ista).isgood = ErrorCode.sta_lackdata;
+				event.autocor(ista) = autocor;
+			else
+				event.autocor(ista) = autocor;
+			end
 		else
-			event.autocor(ista) = autocor;
+			event.autocor(ista) = init_CSstruct;
 		end
 	end
 	

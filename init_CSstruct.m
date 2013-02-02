@@ -1,6 +1,7 @@
 function CS = init_CSstruct()
 
 	setup_parameters;
+	setup_ErrorCode;
 	periods = parameters.periods;
 
 	CS.sta1 = 0;
@@ -14,6 +15,6 @@ function CS = init_CSstruct()
 	CS.amp = zeros(1,length(periods));
 	CS.w = zeros(1,length(periods));
 	CS.sigma = zeros(1,length(periods));
-	CS.exitflag = ones(1,length(periods))*-1;
+	CS.exitflag = ones(1,length(periods))*ErrorCode.init_CS_struct;
 
 end
