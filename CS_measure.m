@@ -23,7 +23,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
     if isdebug
         disp([num2str(sta1),num2str(sta2)]);
     end
-	if length(event.stadata(sta1).data) < 20 || length(event.stadata(sta2).data < 20
+	if length(event.stadata(sta1).data) < 20 || length(event.stadata(sta2).data) < 20
 		CS.exitflag(:) = ErrorCode.sta_lackdata;
 		return
 	end
