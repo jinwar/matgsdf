@@ -1,6 +1,7 @@
 function CS = CS_measure(event,sta1,sta2,parameters)
 % Main function to perform GSDF measurement
 %
+	setup_ErrorCode;
 	isdebug = 0;
     isfigure = 0;
 
