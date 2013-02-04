@@ -4,6 +4,7 @@ CSmeasure
 eikonal
 winpara
 log
+id
 *.lst
 *.m~
 *.mat

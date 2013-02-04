@@ -1,6 +1,7 @@
 function CS = CS_measure(event,sta1,sta2,parameters)
 % Main function to perform GSDF measurement
 %
+	setup_ErrorCode;
 	isdebug = 0;
     isfigure = 0;
 
@@ -15,6 +16,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	Nfit = parameters.Nfit;
 	Ncircle = parameters.Ncircle;
 
+	CS = init_CSstruct;
 	v1 = event.winpara(1); t1=event.winpara(2); v2=event.winpara(3); t2=event.winpara(4);
 
 	CS.sta1 = sta1;
@@ -22,6 +24,10 @@ function CS = CS_measure(event,sta1,sta2,parameters)
     if isdebug
         disp([num2str(sta1),num2str(sta2)]);
     end
+	if length(event.stadata(sta1).data) < 20 || length(event.stadata(sta2).data) < 20
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
+		return
+	end
 
 	% read in data for station 1 and apply prefilter
 	data1 = event.stadata(sta1).data;
@@ -36,6 +42,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	winbgt = dist1/v1+t1;
 	winendt = dist1/v2+t2;
 	if taxis1(1) > winbgt || taxis1(end) < winendt 
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
 		return
 	end
 
@@ -52,6 +59,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	winbgt = dist2/v1+t1;
 	winendt = dist2/v2+t2;
 	if taxis2(1) > winbgt || taxis2(end) < winendt 
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
 		return
 	end
 

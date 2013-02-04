@@ -23,6 +23,13 @@ function [para,resnorm,residual, exitflag] = gsdffit(xcor,lagtime,freq,nfit)
     maxi=find(xcor==max(xcor),1);
     delta=lagtime(2)-lagtime(1);
     fitN=round(nfit*T/delta);
+	if maxi-fitN < 0 || maxi+fitN > length(xcor)
+		para = zeros(5,1);
+		resnorm = 0;
+		residual = 0;
+		exitflag = -8;
+		return;
+	end
 	cutxcor = xcor(maxi-fitN:maxi+fitN);
 	taxis = lagtime(maxi-fitN:maxi+fitN);
 

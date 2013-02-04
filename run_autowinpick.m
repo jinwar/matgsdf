@@ -1,7 +1,7 @@
 % Scripts to run the auto_win_pick function for all the events and generate a old version "events" file
 clear;
 
-isdebug = 1;
+isfigure = 0;
 is_overwrite = 0;
 
 eventmatpath = './eventmat/';
@@ -19,7 +19,7 @@ setup_ErrorCode
 
 periods = parameters.periods;
 
-matfiles = dir([eventmatpath,'/2007*.mat']);
+matfiles = dir([eventmatpath,'/*.mat']);
 for ie = 1:length(matfiles)
 
 	clear event eventcs CS
@@ -52,7 +52,7 @@ for ie = 1:length(matfiles)
 	tic
 		[winpara event] = auto_win_select(event);
 	toc
-	if isdebug
+	if isfigure
 		plot_win_select(event,periods,winpara);
 	end
 	if length(winpara) ~= 4
@@ -68,5 +68,6 @@ for ie = 1:length(matfiles)
 	fclose(fp);
 	event.winpara = winpara;
 	save([eventmatpath,matfiles(ie).name],'event');
+	disp(winpara);
 	
 end % end of event
