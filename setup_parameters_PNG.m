@@ -1,11 +1,19 @@
 % Script to setup parameters used for the whole project
 
+% parameters for the auto_win_select.m
+parameters.largest_epidist_range = 3000;
+parameters.cycle_before = 2;
+parameters.cycle_after = 5;
+parameters.min_dist_tol = deg2km(20);
+parameters.max_dist_tol = deg2km(160);
+
 % parameters for the gsdfmain.m
 %
 parameters.is_rm_resp = 1;
 parameters.minstadist = 5;
 parameters.maxstadist = 200;
 parameters.periods = [20 25 32 40 50 60 80 100];
+parameters.periods = sort(parameters.periods);  % make sure periods are ascending
 parameters.refv = 4;
 parameters.refphv = ones(size(parameters.periods))*4;
 parameters.min_width = 0.06;

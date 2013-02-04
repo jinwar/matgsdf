@@ -37,21 +37,17 @@ for ie = 1:length(phvmatfiles)
 	eventphv = temp.eventphv;
 	disp(eventphv(1).id);
 	for ip=1:length(periods)
-		for j=1:Ny
-			for i=1:Nx
-				if eventphv(ip).GV(i,j) < min_phv_tol
-					eventphv(ip).GV(i,j) = min_phv_tol;
-				end
-				if eventphv(ip).GV(i,j) > max_phv_tol
-					eventphv(ip).GV(i,j) = max_phv_tol;
-				end
-				GV_mat(:,:,ie,ip) = eventphv(ip).GV;
-				if ~isnan(eventphv(ip).GV(i,j)) && eventphv(ip).goodnum > mincsnum
-					avgphv(ip).sumV(i,j) = avgphv(ip).sumV(i,j) + eventphv(ip).GV(i,j)*eventphv(ip).raydense(i,j);
-					avgphv(ip).sumweight(i,j) = avgphv(ip).sumweight(i,j) + eventphv(ip).raydense(i,j);
-				end
-			end
-		end
+        ind = find(eventphv(ip).GV < min_phv_tol);
+        eventphv(ip).GV(ind) = min_phv_tol;
+        ind = find(eventphv(ip).GV > max_phv_tol);
+        eventphv(ip).GV(ind) = max_phv_tol;
+        GV_mat(:,:,ie,ip) = eventphv(ip).GV;
+        if eventphv(ip).goodnum < mincsnum
+            continue;
+        end
+		ind = find(~isnan(eventphv(ip).GV));
+		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + eventphv(ip).GV(ind).*eventphv(ip).raydense(ind);
+		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + eventphv(ip).raydense(ind);
 	end
 end
 
