@@ -25,6 +25,10 @@ for ip=1:length(periods)
 	avgphv(ip).sumV = zeros(Nx,Ny);
 	avgphv(ip).sumweight = zeros(Nx,Ny);
 	avgphv(ip).GV_std = zeros(Nx,Ny);
+	avgphv(ip).xi = xi;
+	avgphv(ip).yi = yi;
+	avgphv(ip).xnode = xnode;
+	avgphv(ip).ynode = ynode;
 end
 GV_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 
@@ -63,6 +67,8 @@ for ip=1:length(periods)
 		end
 	end
 end
+
+save eikonal_stack.mat avgphv
 
 N=3; M = floor(length(periods)/N)+1;
 figure(89)
