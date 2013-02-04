@@ -23,6 +23,10 @@ function CS = CS_measure(event,sta1,sta2,parameters)
     if isdebug
         disp([num2str(sta1),num2str(sta2)]);
     end
+	if length(event.stadata(sta1).data) < 20 || length(event.stadata(sta2).data < 20
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
+		return
+	end
 
 	% read in data for station 1 and apply prefilter
 	data1 = event.stadata(sta1).data;
@@ -37,6 +41,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	winbgt = dist1/v1+t1;
 	winendt = dist1/v2+t2;
 	if taxis1(1) > winbgt || taxis1(end) < winendt 
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
 		return
 	end
 
@@ -53,6 +58,7 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	winbgt = dist2/v1+t1;
 	winendt = dist2/v2+t2;
 	if taxis2(1) > winbgt || taxis2(end) < winendt 
+		CS.exitflag(:) = ErrorCode.sta_lackdata;
 		return
 	end
 
