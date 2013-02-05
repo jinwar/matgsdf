@@ -16,6 +16,7 @@ min_phv_tol = parameters.min_phv_tol;
 max_phv_tol = parameters.max_phv_tol;
 is_raydense_weight = parameters.is_raydense_weight;
 min_event_num = parameters.min_event_num;
+err_std_tol = parameters.err_std_tol;
 
 xnode=lalim(1):gridsize:lalim(2);
 ynode=lolim(1):gridsize:lolim(2);
@@ -34,6 +35,7 @@ for ip=1:length(periods)
 	avgphv(ip).ynode = ynode;
 end
 GV_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
+raydense_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 
 for ie = 1:length(phvmatfiles)
 	temp = load([phase_v_path,phvmatfiles(ie).name]);
@@ -44,13 +46,15 @@ for ie = 1:length(phvmatfiles)
         eventphv(ip).GV(ind) = min_phv_tol;
         ind = find(eventphv(ip).GV > max_phv_tol);
         eventphv(ip).GV(ind) = max_phv_tol;
+		if eventphv(ip).goodnum < mincsnum
+			eventphv(ip).GV(:) = NaN;
+        end
         GV_mat(:,:,ie,ip) = eventphv(ip).GV;
 		if ~is_raydense_weight
 			eventphv(ip).raydense(:) = 1;
 		end
-        if eventphv(ip).goodnum < mincsnum
-            continue;
-        end
+        raydense_mat(:,:,ie,ip) = eventphv(ip).raydense;
+
 		ind = find(~isnan(eventphv(ip).GV));
 		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + eventphv(ip).GV(ind).*eventphv(ip).raydense(ind);
 		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + eventphv(ip).raydense(ind);
@@ -64,14 +68,39 @@ for ip=1:length(periods)
 	avgphv(ip).GV(ind) = NaN;
 end
 
-% Calculate std:
+% Calculate std, remove the outliers
 for ip=1:length(periods)
 	for i = 1:Nx
 		for j=1:Ny
 			avgphv(ip).GV_std(i,j) = nanstd(GV_mat(i,j,:,ip));
+			ind = find( abs(GV_mat(i,j,:,ip) - avgphv(ip).GV(i,j)) > err_std_tol*avgphv(ip).GV_std(i,j));
+			GV_mat(i,j,ind,ip) = NaN;
 		end
 	end
 end
+% calculate the averaged phase velocity again
+for ip=1:length(periods)
+	avgphv(ip).sumV = zeros(Nx,Ny);
+	avgphv(ip).sumweight = zeros(Nx,Ny);
+	avgphv(ip).eventnum = zeros(Nx,Ny);
+end
+
+for ip = 1:length(periods)
+	for ie = 1:length(phvmatfiles)
+		GV = GV_mat(:,:,ie,ip);
+		raydense = raydense_mat(:,:,ie,ip);
+		ind = find(~isnan(GV));
+		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind).*raydense(ind);
+		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + raydense(ind);
+		avgphv(ip).eventnum(ind) = avgphv(ip).eventnum(ind)+1;
+	end
+end
+
+for ip=1:length(periods)
+	avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).sumweight;
+	ind = find(avgphv(ip).eventnum < min_event_num);
+	avgphv(ip).GV(ind) = NaN;
+end	
 
 save eikonal_stack.mat avgphv
 

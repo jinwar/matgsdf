@@ -50,3 +50,4 @@ parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
 parameters.is_raydense_weight = 0;
 parameters.min_event_num = 10;
+parameters.err_std_tol = 2;
