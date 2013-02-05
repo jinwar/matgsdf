@@ -46,5 +46,7 @@ parameters.min_amp_tol = 0.4;  % station with amplitude smaller than this ratio 
 
 % parameter for stacking 
 parameters.mincsnum=50;
-parameters.min_phv_tol = 2;
+parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
+parameters.is_raydense_weight = 0;
+parameters.min_event_num = 10;
