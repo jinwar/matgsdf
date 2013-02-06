@@ -34,7 +34,6 @@ parameters.gridsize=0.3;
 parameters.raydensetol=deg2km(parameters.gridsize)*2;
 parameters.sou_dist_tol = 1;  % count by wavelength
 parameters.smweight0 = 2.0;
-parameters.maxerrweight = 2;
 parameters.Tdumpweight = 0;
 parameters.Rdumpweight = 0;
 parameters.fiterrtol = 3;
@@ -48,3 +47,7 @@ parameters.min_amp_tol = 0.4;  % station with amplitude smaller than this ratio 
 parameters.mincsnum=50;
 parameters.min_phv_tol = 2;
 parameters.max_phv_tol = 5;
+parameters.is_raydense_weight = 1;
+parameters.min_event_num = 10;
+parameters.err_std_tol = 2;
+
