@@ -68,6 +68,7 @@ for ie = 1:length(matfiles)
 
 	% remove instrument response if necessary
 	if is_rm_resp
+		disp('Removing Station intrument response');
 		resp_stanms = {staresp(:).staname};
 		for ista = 1:length(event.stadata)
 			resp_staid = find(ismember(resp_stanms,stnms(3)));

@@ -4,7 +4,7 @@
 %
 clear;
 
-isoverwrite = 0;
+isoverwrite = 1;
 dbpath = './sacdata/';
 eventfile = 'eventlist';
 outpath = './eventmat/';

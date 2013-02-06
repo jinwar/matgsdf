@@ -4,6 +4,7 @@ clear;
 
 phase_v_path = './eikonal/'
 phvmatfiles = dir([phase_v_path,'/*.mat']);
+r = 0.10;
 
 setup_parameters
 
@@ -120,7 +121,6 @@ for ip = 1:length(periods)
 	if isnan(avgv)
 		continue;
 	end
-	r = 0.05;
 	caxis([avgv*(1-r) avgv*(1+r)])
 	colorbar
 	load seiscmap

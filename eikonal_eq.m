@@ -27,7 +27,6 @@ raydensetol=parameters.raydensetol;
 mincsnum = parameters.mincsnum;
 sou_dist_tol = parameters.sou_dist_tol;
 smweight0 = parameters.smweight0;
-maxerrweight = parameters.maxerrweight;
 Tdumpweight0 = parameters.Tdumpweight;
 Rdumpweight0 = parameters.Rdumpweight;
 fiterrtol = parameters.fiterrtol;
@@ -75,6 +74,8 @@ toc
 % read in bad station list, if existed
 if exist('badsta.lst')
 	badstnms = textread('badsta.lst','%s');
+	disp('Found Bad stations:')
+	disp(badstnms)
 end
 
 csmatfiles = dir([eventcs_path,'/*cs.mat']);
@@ -279,6 +280,8 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).lolim = lolim;
 		eventphv(ip).gridsize = gridsize;
 		eventphv(ip).id = eventcs.id;
+		eventphv(ip).evla = eventcs.evla;
+		eventphv(ip).evlo = eventcs.evlo;
 	end % end of periods loop
 	if isfigure
 		N=3; M = floor(length(periods)/N) +1;

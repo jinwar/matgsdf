@@ -5,7 +5,7 @@ function [winpara outevent] = auto_win_select(event,mingroupv,maxgroupv,bandnum,
 % v2 = winpara(3); t2 = winpara(4);
 % and the window is defined by L/v1+t1 -- L/v2+t2
 
-isdebug = 1;
+isdebug = 0;
 
 setup_parameters
 setup_ErrorCode
@@ -282,7 +282,7 @@ for ista = 1:length(event.stadata)
     endtime(ista) = max(endtimes);
 end
 
-if 1
+if isdebug
     figure(39)
     clf
     hold on
