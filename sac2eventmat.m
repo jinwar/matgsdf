@@ -4,6 +4,9 @@
 %
 clear;
 
+setup_parameters;
+
+comp = parameters.component;
 isoverwrite = 1;
 dbpath = './sacdata/';
 eventfile = 'eventlist';
@@ -16,7 +19,7 @@ end
 eventids = textread([dbpath,eventfile],'%s');
 
 for ie = 1:length(eventids)
-	matfilename = [outpath,char(eventids(ie)),'.mat'];
+	matfilename = [outpath,char(eventids(ie)),'_',comp,'.mat'];
 	if ~isoverwrite && exist(matfilename)
 		disp(['Exist ',matfilename,', Skip!']);
 		continue;
@@ -24,7 +27,7 @@ for ie = 1:length(eventids)
 	clear event
 	datapath = [dbpath, char(eventids(ie)),'/'];
 	disp(datapath);
-	saclist = dir([datapath,'*LHZ.sac']);
+	saclist = dir([datapath,'*',comp,'.sac']);
 	for isac = 1:length(saclist)
 		% read sac file
 		sacfilename = [datapath,saclist(isac).name];
@@ -55,7 +58,7 @@ for ie = 1:length(eventids)
 			event.stadata(isac).cmp = 'LHZ';
 		end
 	end
-	matfilename = [outpath,char(eventids(ie))];
+	matfilename = [outpath,char(eventids(ie)),'_',comp,'.mat'];
 	save(matfilename,'event')
 	disp(['Save to ',matfilename]);
 end % end of loop ie

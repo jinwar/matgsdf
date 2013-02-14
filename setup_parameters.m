@@ -1,5 +1,13 @@
 % Script to setup parameters used for the whole project
 
+% Global settings
+parameters.proj_name = 'PNG';
+parameters.component = 'LHZ';
+parameters.lalim=[-11.2 -7.8];
+parameters.lolim=[148.8 151.5];
+parameters.gridsize=0.1;
+parameters.periods = [20 25 32 40 50 60 80 100];
+
 % parameters for the auto_win_select.m
 parameters.largest_epidist_range = 3000;
 parameters.cycle_before = 2;
@@ -12,7 +20,6 @@ parameters.max_dist_tol = deg2km(160);
 parameters.is_rm_resp = 0;
 parameters.minstadist = 5;
 parameters.maxstadist = 200;
-parameters.periods = [20 25 32 40 50 60 80 100];
 parameters.periods = sort(parameters.periods);  % make sure periods are ascending
 parameters.refv = 4;
 parameters.refphv = ones(size(parameters.periods))*4;
@@ -28,9 +35,6 @@ parameters.tp_tol = 10;
 
 % parameters for the tomography
 %
-parameters.lalim=[-11.2 -7.8];
-parameters.lolim=[148.8 151.5];
-parameters.gridsize=0.1;
 parameters.raydensetol=deg2km(parameters.gridsize)*2;
 parameters.sou_dist_tol = 1;  % count by wavelength
 parameters.smweight0 = 1.0;
