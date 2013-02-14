@@ -34,6 +34,7 @@ for ip=1:length(periods)
 	avgphv(ip).yi = yi;
 	avgphv(ip).xnode = xnode;
 	avgphv(ip).ynode = ynode;
+	avgphv(ip).period = periods(ip);
 end
 GV_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 raydense_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
