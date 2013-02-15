@@ -3,11 +3,11 @@
 clear;
 
 phase_v_path = './eikonal/'
-phvmatfiles = dir([phase_v_path,'/*.mat']);
 r = 0.10;
 
 setup_parameters
 
+comp = parameters.component;
 periods = parameters.periods;
 lalim = parameters.lalim;
 lolim = parameters.lolim;
@@ -36,6 +36,9 @@ for ip=1:length(periods)
 	avgphv(ip).ynode = ynode;
 	avgphv(ip).period = periods(ip);
 end
+
+phvmatfiles = dir([phase_v_path,'/*_',comp,'.mat']);
+
 GV_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 raydense_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 
@@ -104,7 +107,7 @@ for ip=1:length(periods)
 	avgphv(ip).GV(ind) = NaN;
 end	
 
-save eikonal_stack.mat avgphv
+save(['eikonal_stack_',comp,'.mat'],'avgphv');
 
 N=3; M = floor(length(periods)/N)+1;
 figure(89)

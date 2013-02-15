@@ -19,6 +19,7 @@ end
 % setup parameters
 setup_parameters
 
+comp = parameters.component;
 lalim=parameters.lalim;
 lolim=parameters.lolim;
 gridsize=parameters.gridsize;
@@ -78,7 +79,7 @@ if exist('badsta.lst')
 	disp(badstnms)
 end
 
-csmatfiles = dir([eventcs_path,'/*cs.mat']);
+csmatfiles = dir([eventcs_path,'/*cs_',comp,'.mat']);
 for ie = 1:length(csmatfiles)
 %for ie = 30
 
@@ -308,7 +309,7 @@ for ie = 1:length(csmatfiles)
 		end
 		drawnow;
 	end
-	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal.mat'];
+	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal_',comp,'.mat'];
 	save(matfilename,'eventphv');
 	disp(['Save the result to: ',matfilename])
 end % end of loop ie

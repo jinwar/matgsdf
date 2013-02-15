@@ -18,8 +18,9 @@ setup_parameters
 setup_ErrorCode
 
 periods = parameters.periods;
+comp = parameters.component;
 
-matfiles = dir([eventmatpath,'/*.mat']);
+matfiles = dir([eventmatpath,'/*_',comp,'.mat']);
 for ie = 1:length(matfiles)
 
 	clear event eventcs CS
@@ -29,12 +30,12 @@ for ie = 1:length(matfiles)
 	disp(event.id)
 
 	if ~is_overwrite
-		filename = [outwinpath,'/',event.id,'.bad'];
+		filename = [outwinpath,'/',event.id,'_',comp,'.bad'];
 		if exist(filename,'file')
 			disp(['Exist: ',filename,' Skip!']);
 			continue;
 		end
-		filename = [outwinpath,'/',event.id,'.win'];
+		filename = [outwinpath,'/',event.id,'_',comp,'.win'];
 		if exist(filename,'file')
 			disp(['Exist: ',filename,' Skip!']);
 			continue;
@@ -56,13 +57,13 @@ for ie = 1:length(matfiles)
 		plot_win_select(event,periods,winpara);
 	end
 	if length(winpara) ~= 4
-		filename = [outwinpath,'/',event.id,'.bad'];
+		filename = [outwinpath,'/',event.id,'_',comp,'.bad'];
 		fp = fopen(filename,'w');
 		fprintf(fp,'%f\n',0);
 		fclose(fp);
 		continue;
 	end
-	filename = [outwinpath,'/',event.id,'.win'];
+	filename = [outwinpath,'/',event.id,'_',comp,'.win'];
 	fp = fopen(filename,'w');
 	fprintf(fp,'%s %f %f %f %f\n',event.id,winpara(1),winpara(2),winpara(3),winpara(4));
 	fclose(fp);

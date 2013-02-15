@@ -1,6 +1,9 @@
 %% The driver program to run all the component in this folder
 % Written by Ge Jin,jinwar@gmail.com
 
+% change sac database to mat
+sac2event
+
 % automatic select the window range
 run_autowinpick
 

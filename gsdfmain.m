@@ -33,6 +33,7 @@ setup_parameters
 % Setup Error Codes for Bad data
 setup_ErrorCode
 
+comp = parameters.component;
 periods = parameters.periods;
 minstadist = parameters.minstadist;
 maxstadist = parameters.maxstadist;
@@ -44,7 +45,7 @@ if is_rm_resp
 	staresp = temp.staresp;
 end
 
-matfiles = dir([eventmatpath,'/*.mat']);
+matfiles = dir([eventmatpath,'/*_',comp,'.mat']);
 for ie = 1:length(matfiles)
 %for ie = 100
     
@@ -53,7 +54,7 @@ for ie = 1:length(matfiles)
 	temp = load([eventmatpath,matfiles(ie).name]);
 	event = temp.event;
 
-	matfilename = [CSoutputpath,char(event.id),'_cs.mat'];
+	matfilename = [CSoutputpath,char(event.id),'_cs_',comp,'.mat'];
 	if ~is_overwrite && exist(matfilename,'file')
 		disp(['Found ',matfilename,', skip this event!']);
 		continue;
@@ -221,7 +222,7 @@ for ie = 1:length(matfiles)
 	eventcs.dists = dists;
 	eventcs.eventmatfile = [eventmatpath,matfiles(ie).name];
 
-	matfilename = [CSoutputpath,char(event.id),'_cs'];
+	matfilename = [CSoutputpath,char(event.id),'_cs_',comp,'.mat'];
 	save(matfilename,'eventcs')
 	disp(['Save to ',matfilename]);
 end % end of ie loop
