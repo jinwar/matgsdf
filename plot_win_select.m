@@ -5,6 +5,14 @@ function plot_win_select(event,periods,winpara)
 % v2 = winpara(3); t2 = winpara(4);
 % and the window is defined by L/v1+t1 -- L/v2+t2
 
+if ~exist('periods','var')
+	setup_parameters;
+	periods = parameters.periods;
+end
+if ~exist('winpara','var')
+	winpara = event.winpara;
+end
+
 freqs = 1./periods;
 minf = min(freqs);
 maxf = max(freqs);
