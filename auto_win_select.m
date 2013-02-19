@@ -167,7 +167,8 @@ for ista = 1:length(event.stadata)
     peaks(ip).bestpeaksnr = peaks(ip).peakamps(ind)/sum([peaks(ip).peakamps]);
     % To the lower frequency bands
     for ip=center_freq_index-1:-1:1  % loop for lower frequencies
-        if isempty(peaks(ip).peaktimes)
+        if isempty(peaks(ip).peaktimes) ...
+            || isempty(peaks(ip+1).peaktimes) || isempty(peaks(ip+1).bestpeak)
             peaks(ip).bestpeak = peaks(ip+1).bestpeak;
             peaks(ip).bestpeaksnr = 0;
             continue;
@@ -199,11 +200,13 @@ for ista = 1:length(event.stadata)
     end % end of loop ip
     % To the higher frequency bands
     for ip=center_freq_index+1:length(freqs)  % loop for higher frequencies
-        if isempty(peaks(ip).peaktimes)
+        if isempty(peaks(ip).peaktimes) ...
+                || isempty(peaks(ip-1).peaktimes) || isempty(peaks(ip-1).bestpeak)
             peaks(ip).bestpeak = peaks(ip-1).bestpeak;
             peaks(ip).bestpeaksnr = 0;
             continue;
         end
+%         disp([num2str(ista),',',num2str(ip)]);
         [temp closest_peak_i] = min(abs(peaks(ip-1).bestpeak - peaks(ip).peaktimes));
         bestpeaki = closest_peak_i;
         amp_point = peaks(ip).peakamps(bestpeaki);
