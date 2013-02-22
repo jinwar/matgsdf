@@ -2,11 +2,11 @@
 
 % Global settings
 parameters.proj_name = 'TA';
-parameters.component = 'LHT';
+parameters.component = 'LHT';   % determined by filenames
 parameters.lalim=[30 50];
 parameters.lolim=[-125 -90];
-parameters.gridsize=0.3;
-parameters.periods = [20 25 32 40 50 60 80 100];
+parameters.gridsize=0.3;   % in degrees
+parameters.periods = [20 25 32 40 50 60 80 100];  % in seconds
 
 % parameters for the auto_win_select.m
 parameters.largest_epidist_range = 3000;
@@ -19,30 +19,29 @@ parameters.max_dist_tol = deg2km(160);
 %
 parameters.is_rm_resp = 0;
 parameters.minstadist = 5;
-parameters.maxstadist = 200;
+parameters.maxstadist = 200;   % station cross-correlation distance in km
 parameters.periods = sort(parameters.periods);  % make sure periods are ascending
-parameters.refv = 4;
+parameters.refv = 4;   % to select the correct cycle
 parameters.refphv = ones(size(parameters.periods))*4;
-parameters.min_width = 0.06;
-parameters.max_width = 0.10;
-parameters.wintaperlength = 30;
+parameters.min_width = 0.06;  % to build up gaussian filters
+parameters.max_width = 0.10;  
+parameters.wintaperlength = 30;   % taper to build up the isolation filter
 parameters.prefilter = [10,200];
-parameters.xcor_win_halflength = 100;
+parameters.xcor_win_halflength = 100;  % window for the cross-correlation
 parameters.Nfit = 2;
 parameters.Ncircle = 2;
-parameters.cohere_tol = 0.5;
-parameters.tp_tol = 10;
+parameters.cohere_tol = 0.5; % minimum coherenecy between two stations
+parameters.tp_tol = 10;  % seconds away from averaged phase velocity 
 
 % parameters for the tomography
 %
 parameters.raydensetol=deg2km(parameters.gridsize)*2;
-parameters.sou_dist_tol = 1;  % count by wavelength
-parameters.smweight0 = 1.0;
-parameters.Tdumpweight = 0;
-parameters.Rdumpweight = 0;
-parameters.fiterrtol = 3;
-parameters.dterrtol = 1;
-parameters.isRsmooth = 1;
+parameters.smweight0 = 1.0;  % smoothing weight for the deltaSx and delta Sy
+parameters.Tdumpweight = 0;  % dumping the ray to the girgle circle path
+parameters.Rdumpweight = 0;  % dumping the region to have the same phase velocity
+parameters.fiterrtol = 3;   % error allowed in the wavelet fitting
+parameters.isRsmooth = 1;  % smoothing due to Sx and Sy or Sr and S_theta
+parameters.dterrtol = 2;    % largest variance of the inversion error allowed
 parameters.inverse_err_tol = 2;  % count be number of standard devition
 parameters.min_amp_tol = 0.4;  % station with amplitude smaller than this ratio of average amplitude will not be used.
 

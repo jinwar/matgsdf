@@ -26,7 +26,6 @@ gridsize=parameters.gridsize;
 periods = parameters.periods;
 raydensetol=parameters.raydensetol;
 mincsnum = parameters.mincsnum;
-sou_dist_tol = parameters.sou_dist_tol;
 smweight0 = parameters.smweight0;
 Tdumpweight0 = parameters.Tdumpweight;
 Rdumpweight0 = parameters.Rdumpweight;
