@@ -268,6 +268,7 @@ end % end of loop sta
 if good_sta_num < min_sta_num
     disp(['Event: ',event.dbpath, ' doesn''t have enough stations, skip!']);
     winpara =0;
+	outevent = event;
     return
 end
 
