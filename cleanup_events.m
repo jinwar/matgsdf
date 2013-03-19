@@ -22,7 +22,7 @@ xnode = [lalim(1),mean(lalim),lalim(2)];
 ynode = [lolim(1),mean(lolim),lolim(2)];
 [xi yi] = meshgrid(xnode,ynode);
 
-matfiles = dir([eventmatpath,'/*.mat']);
+matfiles = dir([eventmatpath,'/*_',parameters.component,'.mat']);
 for ie = 1:length(matfiles)
 	% read in the events information
 	temp = load([eventmatpath,matfiles(ie).name]);
@@ -58,8 +58,15 @@ disp('Bad events:')
 badind = find(isgood == 0);
 for ie = badind
 	disp(evids(ie));
+end
+
+com = input('Do you want to delete these events? y/n','s');
+
+if com == 'y'
+for ie = badind
 	delete([eventmatpath,char(evids(ie)),'*.mat'])
 	delete([csmatpath ,char(evids(ie)),'*.mat'])
 	delete([eikonalpath ,char(evids(ie)),'*.mat'])
+end
 end
 
