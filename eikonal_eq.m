@@ -275,6 +275,8 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).badnum = length(find(w==0));
 		eventphv(ip).dt = dt;
 		eventphv(ip).GV = GV;
+		eventphv(ip).GVx = GVx;
+		eventphv(ip).GVy = GVy;
 		eventphv(ip).raydense = raydense;
 		eventphv(ip).lalim = lalim;
 		eventphv(ip).lolim = lolim;
@@ -282,6 +284,7 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).id = eventcs.id;
 		eventphv(ip).evla = eventcs.evla;
 		eventphv(ip).evlo = eventcs.evlo;
+		eventphv(ip).period = periods(ip);
 	end % end of periods loop
 	if isfigure
 		N=3; M = floor(length(periods)/N) +1;

@@ -1,0 +1,236 @@
+% Program to stack phase velocity maps from each event
+
+clear;
+
+phase_v_path = './helmholtz/'
+r = 0.10;
+
+setup_parameters
+
+comp = parameters.component;
+periods = parameters.periods;
+lalim = parameters.lalim;
+lolim = parameters.lolim;
+gridsize = parameters.gridsize;
+mincsnum = parameters.mincsnum;
+min_phv_tol = parameters.min_phv_tol;
+max_phv_tol = parameters.max_phv_tol;
+is_raydense_weight = parameters.is_raydense_weight;
+min_event_num = parameters.min_event_num;
+err_std_tol = parameters.err_std_tol;
+
+xnode=lalim(1):gridsize:lalim(2);
+ynode=lolim(1):gridsize:lolim(2);
+Nx=length(xnode);
+Ny=length(ynode);
+[xi yi]=ndgrid(xnode,ynode);
+
+for ip=1:length(periods)
+	avgphv(ip).sumV = zeros(Nx,Ny);
+	avgphv(ip).sumV_cor = zeros(Nx,Ny);
+	avgphv(ip).sumweight = zeros(Nx,Ny);
+	avgphv(ip).GV_std = zeros(Nx,Ny);
+	avgphv(ip).GV_cor_std = zeros(Nx,Ny);
+	avgphv(ip).eventnum = zeros(Nx,Ny);
+	avgphv(ip).xi = xi;
+	avgphv(ip).yi = yi;
+	avgphv(ip).xnode = xnode;
+	avgphv(ip).ynode = ynode;
+	avgphv(ip).period = periods(ip);
+end
+
+phvmatfiles = dir([phase_v_path,'/*_helmholtz_',comp,'.mat']);
+
+GV_cor_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
+GV_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
+raydense_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
+
+for ie = 1:length(phvmatfiles)
+	temp = load([phase_v_path,phvmatfiles(ie).name]);
+	helmholtz = temp.helmholtz;
+	disp(helmholtz(1).id);
+	for ip=1:length(periods)
+        ind = find(helmholtz(ip).GV_cor < min_phv_tol);
+        helmholtz(ip).GV_cor(ind) = min_phv_tol;
+        ind = find(helmholtz(ip).GV_cor > max_phv_tol);
+        helmholtz(ip).GV_cor(ind) = max_phv_tol;
+        ind = find(helmholtz(ip).GV_cor < min_phv_tol);
+        helmholtz(ip).GV(ind) = min_phv_tol;
+        ind = find(helmholtz(ip).GV_cor > max_phv_tol);
+        helmholtz(ip).GV(ind) = max_phv_tol;
+		if helmholtz(ip).goodnum < mincsnum
+			helmholtz(ip).GV_cor(:) = NaN;
+			helmholtz(ip).GV(:) = NaN;
+        end
+        GV_cor_mat(:,:,ie,ip) = helmholtz(ip).GV_cor;
+        GV_mat(:,:,ie,ip) = helmholtz(ip).GV;
+		if ~is_raydense_weight
+			helmholtz(ip).raydense(:) = 1;
+		end
+        raydense_mat(:,:,ie,ip) = helmholtz(ip).raydense;
+
+		ind = find(~isnan(helmholtz(ip).GV_cor));
+		avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + helmholtz(ip).GV_cor(ind).*helmholtz(ip).raydense(ind);
+		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + helmholtz(ip).GV(ind).*helmholtz(ip).raydense(ind);
+		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + helmholtz(ip).raydense(ind);
+		avgphv(ip).eventnum(ind) = avgphv(ip).eventnum(ind)+1;
+	end
+end
+
+for ip=1:length(periods)
+	if ~is_raydense_weight
+		avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).eventnum;
+		avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).eventnum;
+	else
+		avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).sumweight;
+		avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).sumweight;
+	end
+	ind = find(avgphv(ip).eventnum < min_event_num);
+	avgphv(ip).GV(ind) = NaN;
+	avgphv(ip).GV_cor(ind) = NaN;
+end
+
+% Calculate std, remove the outliers
+for ip=1:length(periods)
+	for i = 1:Nx
+		for j=1:Ny
+			avgphv(ip).GV_std(i,j) = nanstd(GV_mat(i,j,:,ip));
+			avgphv(ip).GV_cor_std(i,j) = nanstd(GV_cor_mat(i,j,:,ip));
+			ind = find( abs(GV_mat(i,j,:,ip) - avgphv(ip).GV(i,j)) > err_std_tol*avgphv(ip).GV_std(i,j));
+			GV_mat(i,j,ind,ip) = NaN;
+			ind = find( abs(GV_cor_mat(i,j,:,ip) - avgphv(ip).GV_cor(i,j)) > err_std_tol*avgphv(ip).GV_cor_std(i,j));
+			GV_cor_mat(i,j,ind,ip) = NaN;
+		end
+	end
+end
+% calculate the averaged phase velocity again
+for ip=1:length(periods)
+	avgphv(ip).sumV = zeros(Nx,Ny);
+	avgphv(ip).sumweight = zeros(Nx,Ny);
+	avgphv(ip).eventnum = zeros(Nx,Ny);
+end
+
+for ip = 1:length(periods)
+	for ie = 1:length(phvmatfiles)
+		raydense = raydense_mat(:,:,ie,ip);
+		GV = GV_mat(:,:,ie,ip);
+		GV_cor = GV_cor_mat(:,:,ie,ip);
+		ind = find(~isnan(GV_cor));
+		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind).*raydense(ind);
+		avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + GV_cor(ind).*raydense(ind);
+		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + raydense(ind);
+		avgphv(ip).eventnum(ind) = avgphv(ip).eventnum(ind)+1;
+	end
+end
+
+for ip=1:length(periods)
+	avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).sumweight;
+	avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).sumweight;
+	ind = find(avgphv(ip).eventnum < min_event_num);
+	avgphv(ip).GV(ind) = NaN;
+	avgphv(ip).GV_cor(ind) = NaN;
+end	
+
+save(['helmholtz_stack_',comp,'.mat'],'avgphv');
+
+N=3; M = floor(length(periods)/N)+1;
+figure(89)
+clf
+title('stack for dynamics phv')
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+end
+drawnow;
+
+figure(90)
+clf
+title('Std for dynamics phv')
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_std);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+	caxis([0 0.5])
+end
+drawnow;
+
+figure(91)
+clf
+title('stack for structure phv')
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+end
+drawnow;
+
+figure(92)
+clf
+title('Std for structure phv')
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_std);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+	caxis([0 0.5])
+end
+drawnow;
+
+figure(95)
+clf
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).sumweight);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+end
+drawnow;

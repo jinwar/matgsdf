@@ -44,12 +44,16 @@ parameters.isRsmooth = 1;  % smoothing due to Sx and Sy or Sr and S_theta
 parameters.dterrtol = 2;    % largest variance of the inversion error allowed
 parameters.inverse_err_tol = 2;  % count be number of standard devition
 parameters.min_amp_tol = 0.4;  % station with amplitude smaller than this ratio of average amplitude will not be used.
+parameters.amp_var_tol = 2; % how much times change of amplitude of single station to the mean value of nearby stations should be considered as bad measurement
+parameters.alpha_range = [0.5 2];
+parameters.alpha_search_grid = 0.1;
+
 
 
 % parameter for stacking 
 parameters.mincsnum=100;
 parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
-parameters.is_raydense_weight = 1;
+parameters.is_raydense_weight = 0;
 parameters.min_event_num = 10;
 parameters.err_std_tol = 2;
