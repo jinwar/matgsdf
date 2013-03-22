@@ -12,12 +12,13 @@ periods = parameters.periods;
 lalim = parameters.lalim;
 lolim = parameters.lolim;
 gridsize = parameters.gridsize;
-mincsnum = parameters.mincsnum;
+min_csgoodratio = parameters.min_csgoodratio;
 min_phv_tol = parameters.min_phv_tol;
 max_phv_tol = parameters.max_phv_tol;
 is_raydense_weight = parameters.is_raydense_weight;
-min_event_num = parameters.min_event_num;
 err_std_tol = parameters.err_std_tol;
+min_event_num = parameters.min_event_num;
+
 
 xnode=lalim(1):gridsize:lalim(2);
 ynode=lolim(1):gridsize:lolim(2);
@@ -54,11 +55,12 @@ for ie = 1:length(phvmatfiles)
         helmholtz(ip).GV_cor(ind) = min_phv_tol;
         ind = find(helmholtz(ip).GV_cor > max_phv_tol);
         helmholtz(ip).GV_cor(ind) = max_phv_tol;
-        ind = find(helmholtz(ip).GV_cor < min_phv_tol);
+        ind = find(helmholtz(ip).GV < min_phv_tol);
         helmholtz(ip).GV(ind) = min_phv_tol;
-        ind = find(helmholtz(ip).GV_cor > max_phv_tol);
+        ind = find(helmholtz(ip).GV > max_phv_tol);
         helmholtz(ip).GV(ind) = max_phv_tol;
-		if helmholtz(ip).goodnum < mincsnum
+		if helmholtz(ip).goodnum./helmholtz(ip).badnum < min_csgoodratio
+			disp('not enough good cs measurement');
 			helmholtz(ip).GV_cor(:) = NaN;
 			helmholtz(ip).GV(:) = NaN;
         end
@@ -90,6 +92,57 @@ for ip=1:length(periods)
 	avgphv(ip).GV_cor(ind) = NaN;
 end
 
+N=3; M = floor(length(periods)/N)+1;
+figure(71)
+clf
+title('stack for structure phv')
+%for ip = 1:length(periods)
+for ip = 4
+%	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+end
+drawnow;
+
+N=3; M = floor(length(periods)/N)+1;
+figure(72)
+clf
+title('stack for dynamics phv')
+%for ip = 1:length(periods)
+for ip = 4
+%	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+end
+drawnow;
+pause
+
 % Calculate std, remove the outliers
 for ip=1:length(periods)
 	for i = 1:Nx
@@ -106,6 +159,7 @@ end
 % calculate the averaged phase velocity again
 for ip=1:length(periods)
 	avgphv(ip).sumV = zeros(Nx,Ny);
+	avgphv(ip).sumV_cor = zeros(Nx,Ny);
 	avgphv(ip).sumweight = zeros(Nx,Ny);
 	avgphv(ip).eventnum = zeros(Nx,Ny);
 end
@@ -115,7 +169,7 @@ for ip = 1:length(periods)
 		raydense = raydense_mat(:,:,ie,ip);
 		GV = GV_mat(:,:,ie,ip);
 		GV_cor = GV_cor_mat(:,:,ie,ip);
-		ind = find(~isnan(GV_cor));
+		ind = find(~isnan(GV_cor) & ~isnan(GV));
 		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind).*raydense(ind);
 		avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + GV_cor(ind).*raydense(ind);
 		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + raydense(ind);
@@ -172,7 +226,8 @@ for ip = 1:length(periods)
 	colorbar
 	load seiscmap
 	colormap(seiscmap)
-	caxis([0 0.5])
+	meanstd = nanmean(avgphv(ip).GV_std(:));
+	caxis([0 2*meanstd])
 end
 drawnow;
 
@@ -183,7 +238,7 @@ for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
 	set(ax, 'Visible', 'off')
-	h1=surfacem(xi,yi,avgphv(ip).GV);
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
 	% set(h1,'facecolor','interp');
 	load pngcoastline
 	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
@@ -206,7 +261,7 @@ for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
 	set(ax, 'Visible', 'off')
-	h1=surfacem(xi,yi,avgphv(ip).GV_std);
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor_std);
 	% set(h1,'facecolor','interp');
 	load pngcoastline
 	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
@@ -214,7 +269,9 @@ for ip = 1:length(periods)
 	colorbar
 	load seiscmap
 	colormap(seiscmap)
-	caxis([0 0.5])
+	meanstd = nanmean(avgphv(ip).GV_std(:));
+	caxis([0 2*meanstd])
+%	caxis([0 0.5])
 end
 drawnow;
 
