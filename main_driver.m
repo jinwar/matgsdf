@@ -22,3 +22,9 @@ eikonal_eq
 
 % stacking the result
 stack_phv
+
+% apply amplitude correction
+helmholtz_eq
+
+% stack the result of helmholtz
+stack_helm
