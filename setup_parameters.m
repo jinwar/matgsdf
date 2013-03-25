@@ -1,12 +1,12 @@
 % Script to setup parameters used for the whole project
 
 % Global settings
-parameters.proj_name = 'TA';
-parameters.component = 'LHZ';   % determined by filenames
-parameters.lalim=[25 50];
-parameters.lolim=[-125 -65];
-parameters.gridsize=0.3;   % in degrees
-parameters.periods = [20 25 32 40 50 60 80 100];  % in seconds
+parameters.proj_name = 'PNG';
+parameters.component = 'LHZ';
+parameters.lalim=[-11.2 -7.8];
+parameters.lolim=[148.8 151.5];
+parameters.gridsize=0.1;
+parameters.periods = [20 25 32 40 50 60 80 100];
 
 % parameters for the auto_win_select.m
 parameters.largest_epidist_range = 3000;
