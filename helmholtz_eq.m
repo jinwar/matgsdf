@@ -66,6 +66,8 @@ for ie = 1:length(eventfiles)
 		for ista = 1:length(eventcs.autocor)
 			amps(ista) = eventcs.autocor(ista).amp(ip);
 		end
+		% change from power spectrum to amplitude
+		amps = amps.^.5;
 		% get rid of bad stations
 		badstanum = 0; badstaids = [];
 		for ista = 1:length(amps)

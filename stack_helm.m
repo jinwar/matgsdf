@@ -2,6 +2,10 @@
 
 clear;
 
+isrecalulatealpha = 0;
+fixalpha = 1;
+demoip = 4;
+
 phase_v_path = './helmholtz/'
 r = 0.10;
 
@@ -49,6 +53,12 @@ raydense_mat = zeros(Nx,Ny,length(phvmatfiles),length(periods));
 for ie = 1:length(phvmatfiles)
 	temp = load([phase_v_path,phvmatfiles(ie).name]);
 	helmholtz = temp.helmholtz;
+	if isrecalulatealpha
+		for ip=1:length(periods)
+			helmholtz(ip).GV_cor = ((helmholtz(ip).GV).^-2 + fixalpha.*helmholtz(ip).amp_term').^-.5;
+		end
+	end
+			
 	disp(helmholtz(1).id);
 	for ip=1:length(periods)
         ind = find(helmholtz(ip).GV_cor < min_phv_tol);
@@ -92,56 +102,6 @@ for ip=1:length(periods)
 	avgphv(ip).GV_cor(ind) = NaN;
 end
 
-N=3; M = floor(length(periods)/N)+1;
-figure(71)
-clf
-title('stack for structure phv')
-%for ip = 1:length(periods)
-for ip = 4
-%	subplot(M,N,ip)
-	ax = worldmap(lalim, lolim);
-	set(ax, 'Visible', 'off')
-	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
-	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
-	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
-	avgv = nanmean(avgphv(ip).GV(:));
-	if isnan(avgv)
-		continue;
-	end
-	caxis([avgv*(1-r) avgv*(1+r)])
-	colorbar
-	load seiscmap
-	colormap(seiscmap)
-end
-drawnow;
-
-N=3; M = floor(length(periods)/N)+1;
-figure(72)
-clf
-title('stack for dynamics phv')
-%for ip = 1:length(periods)
-for ip = 4
-%	subplot(M,N,ip)
-	ax = worldmap(lalim, lolim);
-	set(ax, 'Visible', 'off')
-	h1=surfacem(xi,yi,avgphv(ip).GV);
-	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
-	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
-	avgv = nanmean(avgphv(ip).GV(:));
-	if isnan(avgv)
-		continue;
-	end
-	caxis([avgv*(1-r) avgv*(1+r)])
-	colorbar
-	load seiscmap
-	colormap(seiscmap)
-end
-drawnow;
-pause
 
 % Calculate std, remove the outliers
 for ip=1:length(periods)
@@ -153,6 +113,8 @@ for ip=1:length(periods)
 			GV_mat(i,j,ind,ip) = NaN;
 			ind = find( abs(GV_cor_mat(i,j,:,ip) - avgphv(ip).GV_cor(i,j)) > err_std_tol*avgphv(ip).GV_cor_std(i,j));
 			GV_cor_mat(i,j,ind,ip) = NaN;
+			avgphv(ip).GV_std(i,j) = nanstd(GV_mat(i,j,:,ip));
+			avgphv(ip).GV_cor_std(i,j) = nanstd(GV_cor_mat(i,j,:,ip));
 		end
 	end
 end
@@ -186,6 +148,64 @@ for ip=1:length(periods)
 end	
 
 save(['helmholtz_stack_',comp,'.mat'],'avgphv');
+
+figure(71)
+clf
+%for ip = 1:length(periods)
+ip = demoip
+	subplot(2,2,2)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['stack for corrected phv,','Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+	subplot(2,2,1)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['stack for dynamics phv,','Periods: ',num2str(periods(ip))],'fontsize',15)
+	avgv = nanmean(avgphv(ip).GV(:));
+	if isnan(avgv)
+		continue;
+	end
+	caxis([avgv*(1-r) avgv*(1+r)])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+
+	subplot(2,2,3)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_std);
+	title(['Original STD,','Periods: ',num2str(periods(ip))],'fontsize',15)
+	meanstd = nanmean(avgphv(ip).GV_std(:));
+	caxis([0 2*meanstd])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
+
+	subplot(2,2,4)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor_std);
+	title(['corrected STD,','Periods: ',num2str(periods(ip))],'fontsize',15)
+	caxis([0 2*meanstd])
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
 
 N=3; M = floor(length(periods)/N)+1;
 figure(89)
