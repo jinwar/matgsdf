@@ -5,7 +5,7 @@
 
 clear;
 
-isfigure = 0;
+isfigure = 1;
 
 % setup parameters
 setup_parameters
@@ -154,10 +154,12 @@ for ie = 1:length(eventfiles)
 			ax = worldmap(lalim, lolim);
 			surfacem(xi,yi,eventGV);
 			colorbar
+			title('before cor');
 			subplot(2,2,2)
 			ax = worldmap(lalim, lolim);
 			surfacem(xi,yi,GV_cor);
 			colorbar
+			title('after cor');
 			nanind = find(isnan(eventGV(:)));
 			ampmap = ampmap';
 			ampmap(nanind) = NaN;
@@ -166,13 +168,15 @@ for ie = 1:length(eventfiles)
 			subplot(2,2,3)
 			ax = worldmap(lalim, lolim);
 			surfacem(xi,yi,ampmap);
+			title('amplitude map')
+			plotm(stlas,stlos,'v')
 			colorbar
 			subplot(2,2,4)
 			ax = worldmap(lalim, lolim);
 			surfacem(xi,yi,amp_term);
 			colorbar
 			[temp bestalphai] = min(alpha_errs);
-			title(num2str(alphas(bestalphai)));
+			title('correction term')
 			figure(38)
 			clf
 			plot(alphas,alpha_errs,'x');
