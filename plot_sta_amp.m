@@ -7,32 +7,32 @@ comp = parameters.component;
 CSfiles = dir(['CSmeasure/*_',comp,'*.mat']);
 
 % Gather information
-%stnms = {};
-%stainfo = [];
-%for ie = 1:length(CSfiles)
-%	clear eventcs amps
-%	load(fullfile('CSmeasure',CSfiles(ie).name));
-%	disp(CSfiles(ie).name)
-%	for ista = 1:length(eventcs.stnms)
-%		amps(ista,:) = eventcs.autocor(ista).amp;
-%	end
-%	meanamp = mean(amps,1);
-%
-%	for ista = 1:length(eventcs.stnms)
-%		if ismember(eventcs.stnms(ista),stnms)
-%			staid = find(ismember(stnms,eventcs.stnms(ista)));
-%			stainfo(staid).norm_amp(end+1,:) = amps(ista,:)./meanamp;
-%			stainfo(staid).ori_amp(end+1,:) = amps(ista,:);
-%		else
-%			stnms(end+1) = eventcs.stnms(ista);
-%			stainfo(end+1).stnm = eventcs.stnms(ista);
-%			stainfo(end).norm_amp(1,:) = amps(ista,:)./meanamp;
-%			stainfo(end).ori_amp(1,:) = amps(ista,:);
-%		end
-%	end
-%end
-%
-%save('png_amp_stainfo.mat','stainfo');
+stnms = {};
+stainfo = [];
+for ie = 1:length(CSfiles)
+	clear eventcs amps
+	load(fullfile('CSmeasure',CSfiles(ie).name));
+	disp(CSfiles(ie).name)
+	for ista = 1:length(eventcs.stnms)
+		amps(ista,:) = sqrt(eventcs.autocor(ista).amp);
+	end
+	meanamp = mean(amps,1);
+
+	for ista = 1:length(eventcs.stnms)
+		if ismember(eventcs.stnms(ista),stnms)
+			staid = find(ismember(stnms,eventcs.stnms(ista)));
+			stainfo(staid).norm_amp(end+1,:) = amps(ista,:)./meanamp;
+			stainfo(staid).ori_amp(end+1,:) = amps(ista,:);
+		else
+			stnms(end+1) = eventcs.stnms(ista);
+			stainfo(end+1).stnm = eventcs.stnms(ista);
+			stainfo(end).norm_amp(1,:) = amps(ista,:)./meanamp;
+			stainfo(end).ori_amp(1,:) = amps(ista,:);
+		end
+	end
+end
+
+save('png_amp_stainfo.mat','stainfo');
 
 load png_amp_stainfo
 
@@ -95,52 +95,52 @@ hist([stainfo(ind).avgmean],10);
 xlim([0 2])
 
 % Gather information
-%stnms = {};
-%stainfo = [];
-%for ie = 1:length(CSfiles)
-%	clear eventcs amps
-%	load(fullfile('CSmeasure',CSfiles(ie).name));
-%	disp(CSfiles(ie).name)
-%	for ista = 1:length(eventcs.stnms)
-%		if ismember(eventcs.stnms(ista),OBSstnms)
-%			amps(ista,:) = eventcs.autocor(ista).amp*OBS_cor;
-%		else
-%			amps(ista,:) = eventcs.autocor(ista).amp;
-%		end
-%	end
-%	meanamp = mean(amps,1);
-%
-%	for ista = 1:length(eventcs.stnms)
-%		if ismember(eventcs.stnms(ista),stnms)
-%			staid = find(ismember(stnms,eventcs.stnms(ista)));
-%			stainfo(staid).norm_amp(end+1,:) = amps(ista,:)./meanamp;
-%			stainfo(staid).ori_amp(end+1,:) = amps(ista,:);
-%		else
-%			stnms(end+1) = eventcs.stnms(ista);
-%			stainfo(end+1).stnm = eventcs.stnms(ista);
-%			stainfo(end).norm_amp(1,:) = amps(ista,:)./meanamp;
-%			stainfo(end).ori_amp(1,:) = amps(ista,:);
-%		end
-%	end
-%end
-%
-%% calculate the means
-%for ista = 1:length(stainfo)
-%	stainfo(ista).meanamp = mean(stainfo(ista).norm_amp,1);
-%	stainfo(ista).avgmean = mean(stainfo(ista).meanamp(avg_band));
-%	if ismember(stainfo(ista).stnm,badstnms)
-%		stainfo(ista).isgood = 0;
-%	else
-%		stainfo(ista).isgood = 1;
-%	end
-%	if ismember(stainfo(ista).stnm,OBSstnms)
-%		stainfo(ista).isOBS = 1;
-%	else
-%		stainfo(ista).isOBS = 0;
-%	end
-%end
-%
-%save('png_amp_stainfo_cor.mat','stainfo');
+stnms = {};
+stainfo = [];
+for ie = 1:length(CSfiles)
+	clear eventcs amps
+	load(fullfile('CSmeasure',CSfiles(ie).name));
+	disp(CSfiles(ie).name)
+	for ista = 1:length(eventcs.stnms)
+		if ismember(eventcs.stnms(ista),OBSstnms)
+			amps(ista,:) = eventcs.autocor(ista).amp.^.5*OBS_cor;
+		else
+			amps(ista,:) = eventcs.autocor(ista).amp.^.5;
+		end
+	end
+	meanamp = mean(amps,1);
+
+	for ista = 1:length(eventcs.stnms)
+		if ismember(eventcs.stnms(ista),stnms)
+			staid = find(ismember(stnms,eventcs.stnms(ista)));
+			stainfo(staid).norm_amp(end+1,:) = amps(ista,:)./meanamp;
+			stainfo(staid).ori_amp(end+1,:) = amps(ista,:);
+		else
+			stnms(end+1) = eventcs.stnms(ista);
+			stainfo(end+1).stnm = eventcs.stnms(ista);
+			stainfo(end).norm_amp(1,:) = amps(ista,:)./meanamp;
+			stainfo(end).ori_amp(1,:) = amps(ista,:);
+		end
+	end
+end
+
+% calculate the means
+for ista = 1:length(stainfo)
+	stainfo(ista).meanamp = mean(stainfo(ista).norm_amp,1);
+	stainfo(ista).avgmean = mean(stainfo(ista).meanamp(avg_band));
+	if ismember(stainfo(ista).stnm,badstnms)
+		stainfo(ista).isgood = 0;
+	else
+		stainfo(ista).isgood = 1;
+	end
+	if ismember(stainfo(ista).stnm,OBSstnms)
+		stainfo(ista).isOBS = 1;
+	else
+		stainfo(ista).isOBS = 0;
+	end
+end
+
+save('png_amp_stainfo_cor.mat','stainfo');
 
 clear stainfo
 
