@@ -51,7 +51,7 @@ for ie = 1:length(phvmatfiles)
         eventphv(ip).GV(ind) = min_phv_tol;
         ind = find(eventphv(ip).GV > max_phv_tol);
         eventphv(ip).GV(ind) = max_phv_tol;
-		if eventphv(ip).goodnum < mincsnum
+		if eventphv(ip).goodnum./eventphv(ip).badnum < parameters.min_csgoodratio
 			eventphv(ip).GV(:) = NaN;
         end
         GV_mat(:,:,ie,ip) = eventphv(ip).GV;
