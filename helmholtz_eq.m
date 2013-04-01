@@ -5,7 +5,7 @@
 
 clear;
 
-isfigure = 1;
+isfigure = 0;
 
 % setup parameters
 setup_parameters

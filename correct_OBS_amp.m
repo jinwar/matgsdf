@@ -4,6 +4,8 @@
 
 
 OBS_cor = 3.0707
+setup_parameters;
+comp = parameters.component;
 
 
 CSfiles = dir(['CSmeasure/*_',comp,'*.mat']);

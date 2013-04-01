@@ -35,8 +35,8 @@ parameters.tp_tol = 10;  % seconds away from averaged phase velocity
 
 % parameters for the tomography
 %
-parameters.raydensetol=deg2km(parameters.gridsize)*2;
-parameters.smweight0 = 1.0;  % smoothing weight for the deltaSx and delta Sy
+parameters.raydensetol=deg2km(parameters.gridsize)*1;
+parameters.smweight0 = 2.0;  % smoothing weight for the deltaSx and delta Sy
 parameters.Tdumpweight = 0;  % dumping the ray to the girgle circle path
 parameters.Rdumpweight = 0;  % dumping the region to have the same phase velocity
 parameters.fiterrtol = 3;   % error allowed in the wavelet fitting
@@ -45,13 +45,13 @@ parameters.dterrtol = 2;    % largest variance of the inversion error allowed
 parameters.inverse_err_tol = 2;  % count be number of standard devition
 parameters.min_amp_tol = 0.4;  % station with amplitude smaller than this ratio of average amplitude will not be used.
 parameters.amp_var_tol = 2; % how much times change of amplitude of single station to the mean value of nearby stations should be considered as bad measurement
-parameters.alpha_range = [0 2];
+parameters.alpha_range = [0.1 2];
 parameters.alpha_search_grid = 0.1;
 
 
 
 % parameter for stacking 
-parameters.min_csgoodratio=1;
+parameters.min_csgoodratio=0.0;
 parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
 parameters.is_raydense_weight = 0;

@@ -192,7 +192,9 @@ ip = demoip
 	h1=surfacem(xi,yi,avgphv(ip).GV_std);
 	title(['Original STD,','Periods: ',num2str(periods(ip))],'fontsize',15)
 	meanstd = nanmean(avgphv(ip).GV_std(:));
-	caxis([0 2*meanstd])
+	if ~isnan(meanstd)
+		caxis([0 2*meanstd])
+	end
 	colorbar
 	load seiscmap
 	colormap(seiscmap)
@@ -202,7 +204,9 @@ ip = demoip
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_cor_std);
 	title(['corrected STD,','Periods: ',num2str(periods(ip))],'fontsize',15)
-	caxis([0 2*meanstd])
+	if ~isnan(meanstd)
+		caxis([0 2*meanstd])
+	end
 	colorbar
 	load seiscmap
 	colormap(seiscmap)
@@ -247,7 +251,9 @@ for ip = 1:length(periods)
 	load seiscmap
 	colormap(seiscmap)
 	meanstd = nanmean(avgphv(ip).GV_std(:));
-	caxis([0 2*meanstd])
+	if ~isnan(meanstd)
+		caxis([0 2*meanstd])
+	end
 end
 drawnow;
 
@@ -290,7 +296,28 @@ for ip = 1:length(periods)
 	load seiscmap
 	colormap(seiscmap)
 	meanstd = nanmean(avgphv(ip).GV_std(:));
-	caxis([0 2*meanstd])
+	if ~isnan(meanstd)
+		caxis([0 2*meanstd])
+	end
+%	caxis([0 0.5])
+end
+drawnow;
+
+figure(93)
+clf
+title('diff phv')
+for ip = 1:length(periods)
+	subplot(M,N,ip)
+	ax = worldmap(lalim, lolim);
+	set(ax, 'Visible', 'off')
+	h1=surfacem(xi,yi,avgphv(ip).GV_cor-avgphv(ip).GV);
+	% set(h1,'facecolor','interp');
+	load pngcoastline
+	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
+	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
+	colorbar
+	load seiscmap
+	colormap(seiscmap)
 %	caxis([0 0.5])
 end
 drawnow;

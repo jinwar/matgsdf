@@ -284,6 +284,8 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).evla = eventcs.evla;
 		eventphv(ip).evlo = eventcs.evlo;
 		eventphv(ip).period = periods(ip);
+		disp(['Period:',num2str(periods(ip)),', Goodnum:',num2str(eventphv(ip).goodnum),...
+				'Badnum:',num2str(eventphv(ip).badnum)]);
 	end % end of periods loop
 	if isfigure
 		N=3; M = floor(length(periods)/N) +1;

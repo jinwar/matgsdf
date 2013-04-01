@@ -12,7 +12,6 @@ periods = parameters.periods;
 lalim = parameters.lalim;
 lolim = parameters.lolim;
 gridsize = parameters.gridsize;
-mincsnum = parameters.mincsnum;
 min_phv_tol = parameters.min_phv_tol;
 max_phv_tol = parameters.max_phv_tol;
 is_raydense_weight = parameters.is_raydense_weight;
@@ -52,6 +51,7 @@ for ie = 1:length(phvmatfiles)
         ind = find(eventphv(ip).GV > max_phv_tol);
         eventphv(ip).GV(ind) = max_phv_tol;
 		if eventphv(ip).goodnum./eventphv(ip).badnum < parameters.min_csgoodratio
+			disp('too few good cs');
 			eventphv(ip).GV(:) = NaN;
         end
         GV_mat(:,:,ie,ip) = eventphv(ip).GV;
