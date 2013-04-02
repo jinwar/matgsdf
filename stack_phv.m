@@ -162,6 +162,8 @@ for ip = 1:length(periods)
 	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
+	meanweight = nanmedian(avgphv(ip).sumweight(:));
+	caxis([0 100]);
 	load seiscmap
 	colormap(seiscmap)
 end

@@ -6,6 +6,7 @@
 clear;
 
 isfigure = 0;
+isoverwrite = 0;
 
 % setup parameters
 setup_parameters
@@ -43,6 +44,11 @@ for ie = 1:length(eventfiles)
 	clear eventphv eventcs helmholtz;
 	load(fullfile(eikonal_data_path,eventfiles(ie).name));
 	eventid = eventphv(1).id;
+	matfilename = fullfile(helmholtz_path,[eventphv(1).id,'_helmholtz_',parameters.component,'.mat']);
+	if exist(matfilename,'file') && ~isoverwrite
+		disp(['exist: ',matfilename,', skip!'])
+		continue;
+	end
 	disp(eventid);
 	eventcsfile = [eventcs_path,'/',eventid,'_cs_',parameters.component,'.mat'];
 	if exist(eventcsfile,'file')
@@ -101,7 +107,7 @@ for ie = 1:length(eventfiles)
 		dAmp=del2m(mesh_xi,mesh_yi,ampmap);
 		amp_term=-dAmp./ampmap./(2*pi/periods(ip)).^2;
 		% smooth the correction term 
-		smD=max([300 periods(ip).*eventcs.avgphv(ip)]);
+		smD=max([300 periods(ip).*parameters.refv]);
 		amp_term = gridfit_jg(mesh_xi(:),mesh_yi(:),amp_term(:),xnode,ynode,...
 							'smooth',floor(smD./deg2km(gridsize)),'regularizer','laplacian','solver','normal');
 		% prepare the avg phase velocity and event phase velocity
