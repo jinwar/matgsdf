@@ -22,5 +22,6 @@ N=3; M = floor(length(periods)/N)+1;
 for ip=1:length(periods);
 	subplot(M,N,ip)
 	hist(alpha(ip,:));
+	title(num2str(periods(ip)));
 end
 	
