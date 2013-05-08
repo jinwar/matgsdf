@@ -81,12 +81,6 @@ end
 csmatfiles = dir([eventcs_path,'/*cs_',comp,'.mat']);
 for ie = 1:length(csmatfiles)
 %for ie = 30
-	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal_',comp,'.mat'];
-	if exist(matfilename,'file') && ~is_overwrite
-		disp(['Exist ',matfilename,', skip']);
-		continue;
-	end
-
 	clear eventphv 
 	% read in data and set up useful variables
 	temp = load([eventcs_path,csmatfiles(ie).name]);
@@ -94,6 +88,13 @@ for ie = 1:length(csmatfiles)
 	disp(eventcs.id)
 	evla = eventcs.evla;
 	evlo = eventcs.evlo;
+
+	matfilename = [eikonl_output_path,'/',eventcs.id,'_eikonal_',comp,'.mat'];
+	if exist(matfilename,'file') && ~is_overwrite
+		disp(['Exist ',matfilename,', skip']);
+		continue;
+	end
+
 
 	if exist('badstnms','var')
 		badstaids = find(ismember(eventcs.stnms,badstnms));
