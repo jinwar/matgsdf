@@ -5,6 +5,7 @@ clear;
 isrecalulatealpha = 0;
 fixalpha = 1;
 demoip = 4;
+isfigure = 0;
 
 phase_v_path = './helmholtz/'
 r = 0.10;
@@ -149,6 +150,7 @@ end
 
 save(['helmholtz_stack_',comp,'.mat'],'avgphv');
 
+if isfigure
 figure(71)
 clf
 %for ip = 1:length(periods)
@@ -322,3 +324,4 @@ for ip = 1:length(periods)
 	colormap(seiscmap)
 end
 drawnow;
+end

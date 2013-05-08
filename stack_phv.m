@@ -4,6 +4,7 @@ clear;
 
 phase_v_path = './eikonal/'
 r = 0.10;
+isfigure = 0;
 
 setup_parameters
 
@@ -109,6 +110,7 @@ end
 
 save(['eikonal_stack_',comp,'.mat'],'avgphv');
 
+if isfigure
 N=3; M = floor(length(periods)/N)+1;
 figure(89)
 clf
@@ -162,3 +164,4 @@ for ip = 1:length(periods)
 	colormap(seiscmap)
 end
 drawnow;
+end
