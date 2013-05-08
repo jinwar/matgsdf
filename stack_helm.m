@@ -158,8 +158,6 @@ ip = demoip
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['stack for corrected phv,','Periods: ',num2str(periods(ip))],'fontsize',15)
 	avgv = nanmean(avgphv(ip).GV(:));
 	if isnan(avgv)
@@ -174,8 +172,6 @@ ip = demoip
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['stack for dynamics phv,','Periods: ',num2str(periods(ip))],'fontsize',15)
 	avgv = nanmean(avgphv(ip).GV(:));
 	if isnan(avgv)
@@ -221,8 +217,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	avgv = nanmean(avgphv(ip).GV(:));
 	if isnan(avgv)
@@ -244,8 +238,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_std);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
 	load seiscmap
@@ -266,8 +258,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_cor);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	avgv = nanmean(avgphv(ip).GV(:));
 	if isnan(avgv)
@@ -289,8 +279,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_cor_std);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
 	load seiscmap
@@ -312,8 +300,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_cor-avgphv(ip).GV);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
 	load seiscmap
@@ -330,8 +316,6 @@ for ip = 1:length(periods)
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).sumweight);
 	% set(h1,'facecolor','interp');
-	load pngcoastline
-	geoshow([S.Lat], [S.Lon], 'Color', 'black','linewidth',2)
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
 	load seiscmap
