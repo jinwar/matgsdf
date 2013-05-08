@@ -38,6 +38,14 @@ periods = parameters.periods;
 
 eventfiles = dir([eikonal_data_path,'/*_eikonal_',parameters.component,'.mat']);
 
+if exist('badampsta.lst','file')
+	badstnms = textread('badampsta.lst','%s');
+	disp('Found Bad amplitude stations:')
+	for ista = 1:length(badstnms)
+	disp(badstnms(ista))
+	end
+end
+
 for ie = 1:length(eventfiles)
 %for ie = 59
 	% read in data for this event
@@ -68,6 +76,12 @@ for ie = 1:length(eventfiles)
 		clear stlas stlos amps
 		stlas = eventcs.stlas;
 		stlos = eventcs.stlos;
+		stnms = eventcs.stnms;
+		if exist('badstnms','var')
+			badstaids = find(ismember(eventcs.stnms,badstnms));
+		else
+			badstaids = [];
+		end
 		amps = zeros(1,length(stlas));
 		for ista = 1:length(eventcs.autocor)
 			amps(ista) = eventcs.autocor(ista).amp(ip);
@@ -78,7 +92,7 @@ for ie = 1:length(eventfiles)
 		badstanum = 0; badstaids = [];
 		for ista = 1:length(amps)
 			if stlas(ista) < lalim(1) || stlas(ista) > lalim(2) || ...
-					stlos(ista) < lolim(1) || stlos(ista) > lolim(2) 
+					stlos(ista) < lolim(1) || stlos(ista) > lolim(2) || ismember(ista,badstaids);
 				badstanum = badstanum+1;
 				badstaids(badstanum) = ista;
 				continue;
@@ -86,6 +100,7 @@ for ie = 1:length(eventfiles)
 			dist = distance(stlas(ista),stlos(ista),stlas,stlos);
 			dist = deg2km(dist);
 			nearstaids = find(dist > parameters.minstadist & dist < parameters.maxstadist );
+			nearstaids(find(ismember(nearstaids,badstaids))) = [];
 			if isempty(nearstaids)
 				badstanum = badstanum+1;
 				badstaids(badstanum) = ista;

@@ -3,8 +3,8 @@
 clear;
 
 phase_v_path = './eikonal/'
-r = 0.10;
-isfigure = 0;
+r = 0.05;
+isfigure = 1;
 
 setup_parameters
 
@@ -48,9 +48,9 @@ for ie = 1:length(phvmatfiles)
 	disp(eventphv(1).id);
 	for ip=1:length(periods)
         ind = find(eventphv(ip).GV < min_phv_tol);
-        eventphv(ip).GV(ind) = min_phv_tol;
+        eventphv(ip).GV(ind) = NaN;
         ind = find(eventphv(ip).GV > max_phv_tol);
-        eventphv(ip).GV(ind) = max_phv_tol;
+        eventphv(ip).GV(ind) = NaN;
 		if eventphv(ip).goodnum./eventphv(ip).badnum < parameters.min_csgoodratio
 			disp('too few good cs');
 			eventphv(ip).GV(:) = NaN;
@@ -118,6 +118,9 @@ for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
 	set(ax, 'Visible', 'off')
+	if exist('drawlocal.m','file')
+		drawlocal
+	end
 	h1=surfacem(xi,yi,avgphv(ip).GV);
 	% set(h1,'facecolor','interp');
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
@@ -137,6 +140,9 @@ clf
 for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
+	if exist('drawlocal.m','file')
+		drawlocal
+	end
 	set(ax, 'Visible', 'off')
 	h1=surfacem(xi,yi,avgphv(ip).GV_std);
 	% set(h1,'facecolor','interp');
@@ -144,7 +150,7 @@ for ip = 1:length(periods)
 	colorbar
 	load seiscmap
 	colormap(seiscmap)
-	caxis([0 0.5])
+	caxis([0 0.4])
 end
 drawnow;
 
@@ -154,12 +160,15 @@ for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
 	set(ax, 'Visible', 'off')
+	if exist('drawlocal.m','file')
+		drawlocal
+	end
 	h1=surfacem(xi,yi,avgphv(ip).sumweight);
 	% set(h1,'facecolor','interp');
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
 	meanweight = nanmedian(avgphv(ip).sumweight(:));
-	caxis([0 100]);
+	caxis([0 2*meanweight]);
 	load seiscmap
 	colormap(seiscmap)
 end
