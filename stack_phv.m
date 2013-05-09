@@ -46,6 +46,8 @@ for ie = 1:length(phvmatfiles)
 	temp = load([phase_v_path,phvmatfiles(ie).name]);
 	eventphv = temp.eventphv;
 	disp(eventphv(1).id);
+	evla(ie) = eventphv(ip).evla;
+	evlo(ie) = eventphv(ip).evlo;
 	for ip=1:length(periods)
         ind = find(eventphv(ip).GV < min_phv_tol);
         eventphv(ip).GV(ind) = NaN;
@@ -74,6 +76,7 @@ for ip=1:length(periods)
 	avgphv(ip).GV(ind) = NaN;
 end
 
+ori_GV_mat = GV_mat;
 % Calculate std, remove the outliers
 for ip=1:length(periods)
 	for i = 1:Nx
@@ -84,6 +87,7 @@ for ip=1:length(periods)
 		end
 	end
 end
+
 % calculate the averaged phase velocity again
 for ip=1:length(periods)
 	avgphv(ip).sumV = zeros(Nx,Ny);
@@ -108,7 +112,7 @@ for ip=1:length(periods)
 	avgphv(ip).GV(ind) = NaN;
 end	
 
-save(['eikonal_stack_',comp,'.mat'],'avgphv');
+save(['eikonal_stack_',comp,'.mat'],'avgphv','GV_mat','ori_GV_mat','evla','evlo');
 
 if isfigure
 N=3; M = floor(length(periods)/N)+1;
