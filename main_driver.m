@@ -6,10 +6,10 @@
 % run sac rotation
 
 % change sac database to mat
-sac2event
+sac2eventmat
 
 % clean up multiple or close events
-cleanup_events.m
+cleanup_events
 
 % automatic select the window range
 run_autowinpick
