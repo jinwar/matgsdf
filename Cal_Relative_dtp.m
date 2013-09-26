@@ -24,6 +24,7 @@ for ip = 1:length(periods)
 	ip
 	clear coefmat dt
 	sta_connect_num = zeros(length(eventcs.stlas),1);
+	coefmat = zeros(1,length(eventcs.stlas));
 	goodcsn = 0;
 	for ics = 1:length(eventcs.CS)
 		if eventcs.CS(ics).isgood(ip) > 0 && sum(ismember([eventcs.CS(ics).sta1 eventcs.CS(ics).sta2],badstaids)) == 0
