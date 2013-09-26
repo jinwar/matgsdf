@@ -116,7 +116,11 @@ for ie = 1:length(csmatfiles)
 		end
 	end
 
-	clear rays
+	% Calculate the relative travel time compare to one reference station
+	travel_time = Cal_Relative_dtp(eventcs);
+
+	% Build the ray locations
+	clear rays 
 	for ics = 1:length(eventcs.CS)
 		rays(ics,1) = eventcs.stlas(eventcs.CS(ics).sta1);
 		rays(ics,2) = eventcs.stlos(eventcs.CS(ics).sta1);
@@ -291,6 +295,9 @@ for ie = 1:length(csmatfiles)
 		eventphv(ip).evla = eventcs.evla;
 		eventphv(ip).evlo = eventcs.evlo;
 		eventphv(ip).period = periods(ip);
+		eventphv(ip).traveltime = travel_time(ip).tp;
+		eventphv(ip).stlas = eventcs.stlas;
+		eventphv(ip).stlos = eventcs.stlos;
 		disp(['Period:',num2str(periods(ip)),', Goodnum:',num2str(eventphv(ip).goodnum),...
 				'Badnum:',num2str(eventphv(ip).badnum)]);
 	end % end of periods loop
