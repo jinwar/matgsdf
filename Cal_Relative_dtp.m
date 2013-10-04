@@ -36,6 +36,13 @@ for ip = 1:length(periods)
 			dt(goodcsn) = eventcs.CS(ics).dtp(ip);
 		end
 	end
+	if goodcsn < 1
+		tp = zeros(length(eventcs.stlas),1);
+		tp(:) = NaN;
+		travel_time(ip).tp = tp;
+		travel_time(ip).sta_connect_num = sta_connect_num;
+		continue;
+	end
 	dt = dt(:);
 	local_connect = diag(coefmat'*coefmat);
 	sta_connect_num(find(local_connect==0)) = 1;
