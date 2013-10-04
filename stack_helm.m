@@ -133,16 +133,26 @@ for ip = 1:length(periods)
 		GV = GV_mat(:,:,ie,ip);
 		GV_cor = GV_cor_mat(:,:,ie,ip);
 		ind = find(~isnan(GV_cor) & ~isnan(GV));
-		avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind).*raydense(ind);
-		avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + GV_cor(ind).*raydense(ind);
+		if is_raydense_weight
+			avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind).*raydense(ind);
+			avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + GV_cor(ind).*raydense(ind);
+		else
+			avgphv(ip).sumV(ind) = avgphv(ip).sumV(ind) + GV(ind);
+			avgphv(ip).sumV_cor(ind) = avgphv(ip).sumV_cor(ind) + GV_cor(ind);
+		end
 		avgphv(ip).sumweight(ind) = avgphv(ip).sumweight(ind) + raydense(ind);
 		avgphv(ip).eventnum(ind) = avgphv(ip).eventnum(ind)+1;
 	end
 end
 
 for ip=1:length(periods)
-	avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).sumweight;
-	avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).sumweight;
+	if is_raydense_weight
+		avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).sumweight;
+		avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).sumweight;
+	else
+		avgphv(ip).GV = avgphv(ip).sumV ./ avgphv(ip).eventnum;
+		avgphv(ip).GV_cor = avgphv(ip).sumV_cor ./ avgphv(ip).eventnum;
+	end
 	ind = find(avgphv(ip).eventnum < min_event_num);
 	avgphv(ip).GV(ind) = NaN;
 	avgphv(ip).GV_cor(ind) = NaN;

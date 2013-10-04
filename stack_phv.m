@@ -50,9 +50,9 @@ for ie = 1:length(phvmatfiles)
 	evlo(ie) = eventphv(ip).evlo;
 	for ip=1:length(periods)
         ind = find(eventphv(ip).GV < min_phv_tol);
-        eventphv(ip).GV(ind) = NaN;
+        eventphv(ip).GV(ind) = min_phv_tol;
         ind = find(eventphv(ip).GV > max_phv_tol);
-        eventphv(ip).GV(ind) = NaN;
+        eventphv(ip).GV(ind) = max_phv_tol;
 		if eventphv(ip).goodnum./eventphv(ip).badnum < parameters.min_csgoodratio
 			disp('too few good cs');
 			eventphv(ip).GV(:) = NaN;
