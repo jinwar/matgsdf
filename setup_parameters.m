@@ -57,3 +57,12 @@ parameters.max_phv_tol = 5;
 parameters.is_raydense_weight = 0;
 parameters.min_event_num = 10;
 parameters.err_std_tol = 4;
+parameters.issmoothmap = 1;
+parameters.smooth_wavelength = 0.5;
+
+
+% parameters for azimuthal anisotropy inversion
+parameters.smsize = 1;  % averaging nearby grid number
+parameters.off_azi_tol = 30; % differ from great circle path
+parameters.is_one_phi = 1;
+
