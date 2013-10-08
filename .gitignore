@@ -8,3 +8,4 @@ id
 *.lst
 *.m~
 *.mat
+.DS_Store
