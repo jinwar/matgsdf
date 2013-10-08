@@ -18,6 +18,9 @@ max_phv_tol = parameters.max_phv_tol;
 is_raydense_weight = parameters.is_raydense_weight;
 min_event_num = parameters.min_event_num;
 err_std_tol = parameters.err_std_tol;
+issmoothmap = parameters.issmoothmap;
+smooth_wavelength = parameters.smooth_wavelength;
+
 
 xnode=lalim(1):gridsize:lalim(2);
 ynode=lolim(1):gridsize:lolim(2);
@@ -50,9 +53,9 @@ for ie = 1:length(phvmatfiles)
 	evlo(ie) = eventphv(ip).evlo;
 	for ip=1:length(periods)
         ind = find(eventphv(ip).GV < min_phv_tol);
-        eventphv(ip).GV(ind) = min_phv_tol;
+        eventphv(ip).GV(ind) = NaN;
         ind = find(eventphv(ip).GV > max_phv_tol);
-        eventphv(ip).GV(ind) = max_phv_tol;
+        eventphv(ip).GV(ind) = NaN;
 		if eventphv(ip).goodnum./eventphv(ip).badnum < parameters.min_csgoodratio
 			disp('too few good cs');
 			eventphv(ip).GV(:) = NaN;
@@ -111,6 +114,16 @@ for ip=1:length(periods)
 	ind = find(avgphv(ip).eventnum < min_event_num);
 	avgphv(ip).GV(ind) = NaN;
 end	
+
+if issmoothmap
+for ip=1:length(periods)
+	D = smooth_wavelength*nanmean(avgphv(ip).GV(:))*periods(ip);
+	GV = smoothmap(xi,yi,avgphv(ip).GV,xnode,ynode,D);
+	GV = GV';
+	GV(find(isnan(avgphv(ip).GV))) = NaN;
+	avgphv(ip).GV = GV;
+end	
+end
 
 save(['eikonal_stack_',comp,'.mat'],'avgphv','GV_mat','ori_GV_mat','evla','evlo');
 
