@@ -15,6 +15,13 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	xcor_win_halflength = parameters.xcor_win_halflength;
 	Nfit = parameters.Nfit;
 	Ncircle = parameters.Ncircle;
+	xcor_win_iter = parameters.xcor_win_iter;
+	if length(xcor_win_iter) ~= length(periods)
+		disp('xcor_win_iter should be the same size as periods!');
+		if length(xcor_win_iter) < length(periods)
+			xcor_win_iter = [zeros(1,length(periods) - length(xcor_win_iter)),xcor_win_iter];
+		end
+	end
 
 	CS = init_CSstruct;
 	v1 = event.winpara(1); t1=event.winpara(2); v2=event.winpara(3); t2=event.winpara(4);
@@ -161,6 +168,29 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		CS.w(ip) = para(2);
 		CS.sigma(ip) = para(3);
 		CS.exitflag(ip) = exitflag;
+	end
+
+	% Iteratively correct for windowing effect
+	for ip = 1:length(periods)
+		if xcor_win_iter(ip)
+			% re-center the window
+			win_cent_t = CS.dtg(ip);
+			win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
+			fft_win_xcor = fft(win_xcor);
+			if size(fft_win_xcor) == 1,fft_win_xcor = fft_win_xcor'; end
+			% narrow-band filter
+			nband = fft_win_xcor .* [gaus_filters(:,ip); zeros(Nt-length(gaus_filters(:,ip)),1)];
+			% fit the wavelet again
+			[para,resnorm,residual, exitflag] = gsdffit(nband(:),lag,1./periods(ip),Nfit);
+			CS.fitpara(:,ip) = para(:);
+			CS.fiterr(ip) = resnorm./para(1)^2./Nfit./periods(ip);
+			CS.dtp(ip) = para(4);
+			CS.dtg(ip) = para(5);
+			CS.amp(ip) = para(1);
+			CS.w(ip) = para(2);
+			CS.sigma(ip) = para(3);
+			CS.exitflag(ip) = exitflag;
+		end
 	end
 
 	% Correct for cycle skipping for dtp

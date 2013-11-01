@@ -28,6 +28,7 @@ parameters.max_width = 0.10;
 parameters.wintaperlength = 30;   % taper to build up the isolation filter
 parameters.prefilter = [10,200];
 parameters.xcor_win_halflength = 100;  % window for the cross-correlation
+parameters.xcor_win_iter = [0 0 0 1 1 1 1 1]; % re-apply the xcor window due to measured group delay, should be same length as periods
 parameters.Nfit = 2;
 parameters.Ncircle = 2;
 parameters.cohere_tol = 0.5; % minimum coherenecy between two stations
@@ -48,10 +49,8 @@ parameters.amp_var_tol = 2; % how much times change of amplitude of single stati
 parameters.alpha_range = [0 2];
 parameters.alpha_search_grid = 0.1;
 
-
-
 % parameter for stacking 
-parameters.min_csgoodratio=0.3;
+parameters.min_csgoodratio=0.3;  % minimum radio between good and bad measurements for a good event
 parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
 parameters.is_raydense_weight = 0;
@@ -59,7 +58,6 @@ parameters.min_event_num = 10;
 parameters.err_std_tol = 4;
 parameters.issmoothmap = 1;
 parameters.smooth_wavelength = 0.5;
-
 
 % parameters for azimuthal anisotropy inversion
 parameters.smsize = 1;  % averaging nearby grid number
