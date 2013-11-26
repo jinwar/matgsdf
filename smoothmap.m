@@ -15,6 +15,9 @@ Nx=floor(D/dx);
 Ny=floor(D/dy);
 
 smoothfactor = mean([Nx Ny]);
+if smoothfactor < 1
+	smoothfactor = 1;
+end
 
 [smap xi yi] = gridfit(xi(:),yi(:),map(:),xnode,ynode,'smooth',smoothfactor);
 

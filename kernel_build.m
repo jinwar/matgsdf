@@ -16,7 +16,7 @@ xmin = min(xnode);
 ymin = min(ynode);
 xmax = max(xnode);
 ymax = max(ynode);
-dr = deg2km(mean(diff(xnode)))/100;
+dr = deg2km(mean(diff(xnode)))/1e3;
 
 Dx = xmax - xmin;
 Dy = ymax - ymin;
@@ -30,14 +30,14 @@ for i = 1:nray
     lat2 = ray(i,3);
     lon2 = ray(i,4);
     %r = distance(lat1,lon1,lat2,lon2)*d2r;
-    [r azi] = distance(lat1,lon1,lat2,lon2);
-	r = deg2km(r);
+    azi = azimuth(lat1,lon1,lat2,lon2);
+	r = vdist(lat1,lon1,lat2,lon2)/1e3;
 
 	% set segment length
     if r<dr
         continue;
     end    
-	Nr = floor(r/dr);
+	Nr = round(r/dr);
 % AGORITHEM BY W.MENKE, MATLAB BOOK CODE 12-5    
 
 % I use a sloppy way of computing the length of the ra

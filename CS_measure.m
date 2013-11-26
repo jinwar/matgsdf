@@ -180,7 +180,9 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 			if size(fft_win_xcor) == 1,fft_win_xcor = fft_win_xcor'; end
 			% narrow-band filter
 			nband = fft_win_xcor .* [gaus_filters(:,ip); zeros(Nt-length(gaus_filters(:,ip)),1)];
-			% fit the wavelet again
+            nband = ifft(nband);
+            nband = 2*real(nband);
+            % fit the wavelet again
 			[para,resnorm,residual, exitflag] = gsdffit(nband(:),lag,1./periods(ip),Nfit);
 			CS.fitpara(:,ip) = para(:);
 			CS.fiterr(ip) = resnorm./para(1)^2./Nfit./periods(ip);

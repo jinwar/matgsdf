@@ -45,15 +45,17 @@ Ny=length(ynode);
 % Setup universal smoothing kernel
 disp('initial the smoothing kernel')
 tic
+	% longtitude smoothing
     [i,j] = ndgrid(1:Nx,2:(Ny-1));
     ind = j(:) + Ny*(i(:)-1);
-    dy = diff(ynode);
+    dy = diff(ynode)*cosd(mean(xnode));  % correct smoothing for latitude
     dy1 = dy(j(:)-1);
     dy2 = dy(j(:));
 
     Areg = sparse(repmat(ind,1,3),[ind-1,ind,ind+1], ...
                     [-2./(dy1.*(dy1+dy2)), 2./(dy1.*dy2), -2./(dy2.*(dy1+dy2))],Nx*Ny,Nx*Ny);
 
+	% latitude smoothing
     [i,j] = ndgrid(2:(Nx-1),1:Ny);
     ind = j(:) + Ny*(i(:)-1);
     dx = diff(xnode);
