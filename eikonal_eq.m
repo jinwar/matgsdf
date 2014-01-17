@@ -26,7 +26,7 @@ lolim=parameters.lolim;
 gridsize=parameters.gridsize;
 periods = parameters.periods;
 raydensetol=parameters.raydensetol;
-smweight0 = parameters.smweight0;
+smweight_array = parameters.smweight_array;
 Tdumpweight0 = parameters.Tdumpweight;
 Rdumpweight0 = parameters.Rdumpweight;
 fiterrtol = parameters.fiterrtol;
@@ -144,6 +144,7 @@ for ie = 1:length(csmatfiles)
 	
 	% Loop through the periods
 	for ip = 1:length(periods)
+		smweight0 = smweight_array(ip);
 		dt = zeros(length(eventcs.CS),1);
 		w = zeros(length(eventcs.CS),1);
 		for ics = 1:length(eventcs.CS)

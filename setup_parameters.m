@@ -37,7 +37,7 @@ parameters.tp_tol = 10;  % seconds away from averaged phase velocity
 % parameters for the tomography
 %
 parameters.raydensetol=deg2km(parameters.gridsize)*2;
-parameters.smweight0 = 1.0;  % smoothing weight for the deltaSx and delta Sy
+parameters.smweight_array = [0.4 0.3 0.2 0.2 0.2 0.2 0.5 1];  % smoothing weight for the deltaSx and delta Sy
 parameters.Tdumpweight = 0;  % dumping the ray to the girgle circle path
 parameters.Rdumpweight = 0;  % dumping the region to have the same phase velocity
 parameters.fiterrtol = 3;   % error allowed in the wavelet fitting
