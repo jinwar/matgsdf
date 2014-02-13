@@ -58,6 +58,7 @@ parameters.min_event_num = 10;
 parameters.err_std_tol = 4;
 parameters.issmoothmap = 1;
 parameters.smooth_wavelength = 0.5;
+parameters.run_smooth_wavelength = 0.5;
 
 % parameters for azimuthal anisotropy inversion
 parameters.smsize = 1;  % averaging nearby grid number
