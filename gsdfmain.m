@@ -156,6 +156,15 @@ for ie = 1:length(matfiles)
 		end
 	end
 
+	% Removing window $W_S$ bias
+	for ics = 1:length(CS)
+		sta1 = CS(ics).sta1;
+		sta2 = CS(ics).sta2;
+		for ip=1:length(periods)
+			CS(ics).dtp(ip) = CS(ics).dtp(ip)-event.autocor(sta2).dtp(ip);
+		end
+	end
+
 	%% Data Quality Control
 	%
 	for ics = 1:length(CS)
