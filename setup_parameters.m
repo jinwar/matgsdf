@@ -8,6 +8,12 @@ parameters.lolim=[-125 -65];
 parameters.gridsize=0.3;   % in degrees
 parameters.periods = [20 25 32 40 50 60 80 100];  % in seconds
 
+% parameters for data downloading (if using IRIS DMC)
+parameters.start_time = '2014-03-29 00:00:00';
+parameters.network = 'TA';
+parameters.minMw = 6;
+
+
 % parameters for the auto_win_select.m
 parameters.largest_epidist_range = 3000;
 parameters.cycle_before = 2;

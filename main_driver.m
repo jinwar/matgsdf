@@ -1,12 +1,13 @@
 %% The driver program to run all the component in this folder
 % Written by Ge Jin,jinwar@gmail.com
 
+% if using sac dataset
 % download data use SOD
-
 % run sac rotation
-
 % change sac database to mat
-sac2eventmat
+%sac2eventmat
+
+% download the data using 
 
 % clean up multiple or close events
 cleanup_events
