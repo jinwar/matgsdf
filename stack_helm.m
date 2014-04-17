@@ -23,6 +23,8 @@ max_phv_tol = parameters.max_phv_tol;
 is_raydense_weight = parameters.is_raydense_weight;
 err_std_tol = parameters.err_std_tol;
 min_event_num = parameters.min_event_num;
+issmoothmap = parameters.issmoothmap;
+smooth_wavelength = parameters.smooth_wavelength;
 
 
 xnode=lalim(1):gridsize:lalim(2);
@@ -157,6 +159,20 @@ for ip=1:length(periods)
 	avgphv(ip).GV(ind) = NaN;
 	avgphv(ip).GV_cor(ind) = NaN;
 end	
+
+if issmoothmap
+	disp(['Smoothing map based on wavelength']);
+	for ip=1:length(periods)
+		disp(ip);
+		D = smooth_wavelength*nanmean(avgphv(ip).GV(:))*periods(ip);
+		GV = smoothmap(xi,yi,avgphv(ip).GV,D);
+		GV(find(isnan(avgphv(ip).GV))) = NaN;
+		avgphv(ip).GV = GV;
+		GV_cor = smoothmap(xi,yi,avgphv(ip).GV_cor,D);
+		GV_cor(find(isnan(avgphv(ip).GV_cor))) = NaN;
+		avgphv(ip).GV_cor = GV_cor;
+	end	
+end
 
 save(['helmholtz_stack_',comp,'.mat'],'avgphv');
 

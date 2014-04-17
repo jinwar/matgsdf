@@ -60,7 +60,8 @@ for ie = badind
 	disp(evids(ie));
 end
 
-com = input('Do you want to delete these events? y/n','s');
+%com = input('Do you want to delete these events? y/n','s');
+com = 'y';
 
 if com == 'y'
 for ie = badind

@@ -1,25 +1,15 @@
-function smap=smoothmap(xi,yi,map,xnode,ynode,D)
+function smap=smoothmap(xi,yi,map,D)
 % This function is used to make a gaussian smoothing on a grd map
 
-% D is Gaussian average distance
+% D is average distance
 
-[m n]=size(xi);
-
-midi=floor(m/2);
-midj=floor(n/2);
-
-dx=vdist(xi(midi,midj),yi(midi,midj),xi(midi+1,midj),yi(midi+1,midj))/1e3;
-dy=vdist(xi(midi,midj),yi(midi,midj),xi(midi,midj+1),yi(midi,midj+1))/1e3;
-
-Nx=floor(D/dx);
-Ny=floor(D/dy);
-
-smoothfactor = mean([Nx Ny]);
-if smoothfactor < 1
-	smoothfactor = 1;
+smap = map;
+for i=1:length(xi(:))
+	dist = distance(xi(i),yi(i),xi,yi);
+	dist = deg2km(dist);
+	ind = find(dist<D);
+	smap(i) = nanmean(map(ind));
 end
-
-[smap xi yi] = gridfit(xi(:),yi(:),map(:),xnode,ynode,'smooth',smoothfactor);
-
-end
+ind = find(isnan(map(:)));
+smap(ind) = NaN;
 

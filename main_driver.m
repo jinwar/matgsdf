@@ -8,6 +8,7 @@
 %sac2eventmat
 
 % download the data using 
+data_download
 
 % clean up multiple or close events
 cleanup_events

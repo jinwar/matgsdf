@@ -201,7 +201,6 @@ for ie = 1:length(eventfiles)
 			figure(38)
 			clf
 			plot(alphas,alpha_errs,'x');
-			pause;
 		end % end of isfigure
 	end  % loop of period
 	matfilename = fullfile(helmholtz_path,[eventphv(1).id,'_helmholtz_',parameters.component,'.mat']);
