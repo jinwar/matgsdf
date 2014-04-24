@@ -116,13 +116,12 @@ for ip=1:length(periods)
 end	
 
 if issmoothmap
-for ip=1:length(periods)
-	D = smooth_wavelength*nanmean(avgphv(ip).GV(:))*periods(ip);
-	GV = smoothmap(xi,yi,avgphv(ip).GV,xnode,ynode,D);
-	GV = GV';
-	GV(find(isnan(avgphv(ip).GV))) = NaN;
-	avgphv(ip).GV = GV;
-end	
+	for ip=1:length(periods)
+		D = smooth_wavelength*nanmean(avgphv(ip).GV(:))*periods(ip);
+		GV = smoothmap(xi,yi,avgphv(ip).GV,D);
+		GV(find(isnan(avgphv(ip).GV))) = NaN;
+		avgphv(ip).GV = GV;
+	end	
 end
 
 save(['eikonal_stack_',comp,'.mat'],'avgphv','GV_mat','ori_GV_mat','evla','evlo');

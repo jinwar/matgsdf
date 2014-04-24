@@ -63,7 +63,7 @@ isgood = [event.stadata(:).isgood];
 goodind = find(isgood>0);
 dist = [event.stadata(goodind).dist];
 if mean(dist) < min_dist_tol || mean(dist) > max_dist_tol
-    disp(['Event: ',event.dbpath,' is not in the proporal range']);
+    disp(['Event: ',event.id,' is not in the proporal range']);
     winpara = 0;
     outevent = event;
     return;
@@ -266,7 +266,7 @@ for ista = 1:length(event.stadata)
 end % end of loop sta
 
 if good_sta_num < min_sta_num
-    disp(['Event: ',event.dbpath, ' doesn''t have enough stations, skip!']);
+    disp(['Event: ',event.id, ' doesn''t have enough stations, skip!']);
     winpara =0;
 	outevent = event;
     return
@@ -347,7 +347,7 @@ end
 
 bad_f_ind = find(groupv == mingroupv | groupv == maxgroupv);
 if length(bad_f_ind) > bad_f_num_tol
-    disp(['Event: ',event.dbpath, ' SNR is too low, skip!']);
+    disp(['Event: ',event.id, ' SNR is too low, skip!']);
     winpara = 0;
     outevent = event;
     return
