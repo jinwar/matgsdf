@@ -170,3 +170,8 @@ for ie=1:length(events_info)
 	save(event_filename,'event')
 	disp(['Save to ',event_filename]);
 end
+
+if parameters.is_use_timestamp
+	start_time = end_time;
+	save('timestamp.mat','start_time');
+end

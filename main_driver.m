@@ -2,9 +2,6 @@
 % Written by Ge Jin,jinwar@gmail.com
 
 % if using sac dataset
-% download data use SOD
-% run sac rotation
-% change sac database to mat
 %sac2eventmat
 
 % download the data using 

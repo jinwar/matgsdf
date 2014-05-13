@@ -54,9 +54,9 @@ for ie = 1:length(eventids)
 		event.stadata(isac).cmp = sac.KCMPNM;
 		event.stadata(isac).stnm = sac.KSTNM;
 		event.stadata(isac).filename = sacfilename;
-		if sac.DELTA == 1
-			event.stadata(isac).cmp = 'LHZ';
-		end
+%		if sac.DELTA == 1
+%			event.stadata(isac).cmp = 'LHZ';
+%		end
 	end
 	matfilename = [outpath,char(eventids(ie)),'_',comp,'.mat'];
 	save(matfilename,'event')
