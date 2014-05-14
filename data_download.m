@@ -5,7 +5,7 @@ javaaddpath('IRIS-WS-2.0.6.jar');
 setup_parameters;
 lalim = parameters.lalim;
 lolim = parameters.lolim;
-component = parameters.components;
+component = parameters.component;
 
 datacache = 'datacache';
 if ~exist('eventmat','dir')
@@ -86,6 +86,7 @@ for ie=1:length(events_info)
 			elseif component(1) == 'B'
 			traces = irisFetch.Traces(network,stnm,'*','BH*',event_starttime,event_endtime,'includePZ');
 			save(sta_filename,'traces');
+			end
 		catch e
 			e.message;
 			continue;
