@@ -5,6 +5,7 @@ javaaddpath('IRIS-WS-2.0.6.jar');
 setup_parameters;
 lalim = parameters.lalim;
 lolim = parameters.lolim;
+component = parameters.components;
 
 datacache = 'datacache';
 if ~exist('eventmat','dir')
@@ -60,7 +61,7 @@ for ie=1:length(events_info)
 	event_starttime = datestr(otime,'yyyy-mm-dd HH:MM:SS');
 	event_endtime = datestr(otime+parameters.datalength/3600/24,'yyyy-mm-dd HH:MM:SS');
 	stations_info = irisFetch.Stations('channel',parameters.network,...
-						'*','*','LHZ',...
+						'*','*',component,...
 			'MinimumLatitude', lalim(1), 'MaximumLatitude', lalim(2), ...
 			'MinimumLongitude',lolim(1) ,'MaximumLongitude',lolim(2), ...
 						'startTime',event_starttime,'endTime',event_endtime);
@@ -80,7 +81,10 @@ for ie=1:length(events_info)
 		end
 		disp(['Downloading station: ',stnm,' From:',event_starttime,' To:',event_endtime]);
 		try
+			if component(1) == 'L'
 			traces = irisFetch.Traces(network,stnm,'*','LH*',event_starttime,event_endtime,'includePZ');
+			elseif component(1) == 'B'
+			traces = irisFetch.Traces(network,stnm,'*','BH*',event_starttime,event_endtime,'includePZ');
 			save(sta_filename,'traces');
 		catch e
 			e.message;
@@ -92,19 +96,19 @@ for ie=1:length(events_info)
 	sta_mat_files = dir(fullfile(datacache,eventid,'*.mat'));
 	for ista = 1:length(sta_mat_files) 
 		sta = load(fullfile(datacache,eventid,sta_mat_files(ista).name));
-		ind = find(ismember({sta.traces.channel},{'LHZ'}));
+		ind = find(ismember({sta.traces.channel},{'LHZ','BHZ'}));
 		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
 			disp(['deleting ',sta_mat_files(ista).name]);
 			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
 			continue;
 		end
-		ind = find(ismember({sta.traces.channel},{'LHN','LH1'}));
+		ind = find(ismember({sta.traces.channel},{'LHN','LH1','BHN','BH1'}));
 		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
 			disp(['deleting ',sta_mat_files(ista).name]);
 			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
 			continue;
 		end
-		ind = find(ismember({sta.traces.channel},{'LHE','LH2'}));
+		ind = find(ismember({sta.traces.channel},{'LHE','LH2','BHE','BH2'}));
 		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
 			disp(['deleting ',sta_mat_files(ista).name]);
 			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
@@ -119,11 +123,11 @@ for ie=1:length(events_info)
 	end
 	for ista = 1:length(sta_mat_files)
 		sta = load(fullfile(datacache,eventid,sta_mat_files(ista).name));
-		ind = find(ismember({sta.traces.channel},{'LHZ'}));
+		ind = find(ismember({sta.traces.channel},{'LHZ','BHZ'}));
 		LHZ = sta.traces(ind);
-		ind = find(ismember({sta.traces.channel},{'LHN','LH1'}));
+		ind = find(ismember({sta.traces.channel},{'LHN','LH1','BHN','BH1'}));
 		LHN = sta.traces(ind);
-		ind = find(ismember({sta.traces.channel},{'LHE','LH2'}));
+		ind = find(ismember({sta.traces.channel},{'LHE','LH2','BHE','BH2'}));
 		LHE = sta.traces(ind);
 		stla = LHZ.latitude;
 		stlo = LHZ.longitude;
@@ -133,6 +137,12 @@ for ie=1:length(events_info)
 			LHZ = rm_resp(LHZ); 
 			stadata = LHZ.data_cor;
 			datacmp = 'LHZ';
+			data_starttime = LHZ.startTime;
+			data_delta = LHZ.sampleRate;
+		elseif parameters.component == 'BHZ'
+			LHZ = rm_resp(LHZ); 
+			stadata = LHZ.data_cor;
+			datacmp = 'BHZ';
 			data_starttime = LHZ.startTime;
 			data_delta = LHZ.sampleRate;
 		elseif parameters.component == 'LHT'

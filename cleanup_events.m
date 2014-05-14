@@ -36,6 +36,11 @@ for ie = 1:length(matfiles)
 	dist = deg2km(distance(xi,yi,evlas(ie),evlos(ie)));
 	win_start(ie) = evotimes(ie) + min(dist(:)/5);
 	win_end(ie) = evotimes(ie) + max(dist(:)/2);
+	if ~isfield(event,'stadata')
+		isgood(ie)=0;
+	elseif length(event.stadata)<5
+		isgood(ie)=0;
+	end
 end % end of event loop
 
 for ie = 1:length(evlas)
