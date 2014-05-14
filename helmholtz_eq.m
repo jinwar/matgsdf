@@ -84,11 +84,20 @@ for ie = 1:length(eventfiles)
 		end
 		amps = zeros(1,length(stlas));
 		for ista = 1:length(eventcs.autocor)
-			amps(ista) = eventcs.autocor(ista).amp(ip);
+			if eventcs.autocor(ista).exitflag(ip)>0
+				amps(ista) = eventcs.autocor(ista).amp(ip);
+			else
+				amps(ista) = NaN;
+			end
 		end
 		% change from power spectrum to amplitude
 		amps = amps.^.5;
+
 		% get rid of bad stations
+		badstaids = find(isnan(amps));
+		stlas(badstaids) = [];
+		stlos(badstaids) = [];
+		amps(badstaids) = [];
 		badstanum = 0; badstaids = [];
 		for ista = 1:length(amps)
 			if stlas(ista) < lalim(1) || stlas(ista) > lalim(2) || ...
@@ -171,6 +180,7 @@ for ie = 1:length(eventfiles)
 		if isfigure
 			figure(37)
 			clf
+                        set(gcf,'renderer','zbuffer');
 			subplot(2,2,1)
 			ax = worldmap(lalim, lolim);
 			surfacem(xi,yi,eventGV);
@@ -200,6 +210,7 @@ for ie = 1:length(eventfiles)
 			title('correction term')
 			figure(38)
 			clf
+                        set(gcf,'renderer','zbuffer');
 			plot(alphas,alpha_errs,'x');
 		end % end of isfigure
 	end  % loop of period

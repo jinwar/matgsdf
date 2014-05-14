@@ -4,7 +4,7 @@ clear;
 
 phase_v_path = './eikonal/'
 r = 0.05;
-isfigure = 1;
+isfigure = 0;
 
 setup_parameters
 
@@ -130,6 +130,7 @@ if isfigure
 N=3; M = floor(length(periods)/N)+1;
 figure(89)
 clf
+set(gcf,'renderer','zbuffer');
 for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
@@ -153,6 +154,7 @@ drawnow;
 
 figure(90)
 clf
+set(gcf,'renderer','zbuffer');
 for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
@@ -172,6 +174,7 @@ drawnow;
 
 figure(91)
 clf
+set(gcf,'renderer','zbuffer');
 for ip = 1:length(periods)
 	subplot(M,N,ip)
 	ax = worldmap(lalim, lolim);
@@ -183,7 +186,11 @@ for ip = 1:length(periods)
 	% set(h1,'facecolor','interp');
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
+	avgphv(ip).sumweigth(find(avgphv(ip).sumweigth(:)==0)) = NaN;
 	meanweight = nanmedian(avgphv(ip).sumweight(:));
+	if isnan(meanweight) || meanweigth < 10
+		meanweight = 10;
+	end
 	caxis([0 2*meanweight]);
 	load seiscmap
 	colormap(seiscmap)
