@@ -139,13 +139,13 @@ for ie=1:length(events_info)
 			stadata = LHZ.data_cor;
 			datacmp = 'LHZ';
 			data_starttime = LHZ.startTime;
-			data_delta = LHZ.sampleRate;
+			data_delta = 1./LHZ.sampleRate;
 		elseif parameters.component == 'BHZ'
 			LHZ = rm_resp(LHZ); 
 			stadata = LHZ.data_cor;
 			datacmp = 'BHZ';
 			data_starttime = LHZ.startTime;
-			data_delta = LHZ.sampleRate;
+			data_delta = 1./LHZ.sampleRate;
 		elseif parameters.component == 'LHT'
 			% do the rotation
 			LHE = rm_resp(LHE); 
@@ -176,11 +176,12 @@ for ie=1:length(events_info)
 			return;
 		end % component selection
 		% resample the data if necessary
-		if parameters.resample_delta < data_delta
+		if parameters.resample_delta > data_delta
 			old_taxis = 0:data_delta:(length(stadata)-1)*data_delta;
-			data_delta = parameters.resample_delta;
-			new_taxis = 0:data_delta:(length(stadata)-1)*data_delta;
+			resample_delta = parameters.resample_delta;
+			new_taxis = 0:resample_delta:(length(stadata)-1)*data_delta;
 			stadata = interp1(old_taxis,stadata,new_taxis,'spline');
+			data_delta = resample_delta;
 		end
 		event.stadata(ista).stla = stla;	
 		event.stadata(ista).stlo = stlo;	
