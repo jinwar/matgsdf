@@ -147,6 +147,10 @@ for ie = 1:length(matfiles)
 		end % end of nearby station loop
 	end % end of station loop
 
+	if csnum < 10
+		disp(['Event has too few cross-correlations!']);
+		continue;
+	end
 	% Calculate the coherency between each station pairs
 	for ics = 1:length(CS)
 		sta1 = CS(ics).sta1;
