@@ -27,3 +27,6 @@ helmholtz_eq
 
 % stack the result of helmholtz
 stack_helm
+
+% export the result into xyz format
+make_xyz
