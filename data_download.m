@@ -175,6 +175,13 @@ for ie=1:length(events_info)
 			disp('Unrecognized component, exit!');
 			return;
 		end % component selection
+		% resample the data if necessary
+		if parameters.resample_delta < data_delta
+			old_taxis = 0:data_delta:(length(stadata)-1)*data_delta;
+			data_delta = parameters.resample_delta;
+			new_taxis = 0:data_delta:(length(stadata)-1)*data_delta;
+			stadata = interp1(old_taxis,stadata,new_taxis,'spline');
+		end
 		event.stadata(ista).stla = stla;	
 		event.stadata(ista).stlo = stlo;	
 		event.stadata(ista).stel = stel;	

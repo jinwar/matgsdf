@@ -13,11 +13,12 @@ parameters.periods = [20 25 32 40 50 60 80 100];  % in seconds
 % parameters for data downloading (if using IRIS DMC)
 parameters.start_time = '2009-01-07 00:00:00';
 parameters.end_time = '2009-06-08 00:00:00'; % put '' for using 4 days before current date
-parameters.is_use_timestamp = 1;
-parameters.network = '_US-ALL';
+parameters.is_use_timestamp = 0;
+parameters.network = '*';
 parameters.minMw = 6;
 parameters.maxdepth = 50;
 parameters.datalength = 7200;  % in second
+parameters.resample_delta = 1; % in second
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameters for the auto_win_select.m
