@@ -114,6 +114,9 @@ for ie=1:length(events_info)
 	
 	% prepare the data, remove instrument response, transfer the format
 	sta_mat_files = dir(fullfile(datacache,eventid,'*.mat'));
+	if length(sta_mat_files) < 3
+		continue;
+	end
 	for ista = 1:length(sta_mat_files)
 		sta = load(fullfile(datacache,eventid,sta_mat_files(ista).name));
 		ind = find(ismember({sta.traces.channel},{'LHZ'}));
