@@ -85,8 +85,8 @@ for ie=1:length(events_info)
 			traces = irisFetch.Traces(network,stnm,'*','LH*',event_starttime,event_endtime,'includePZ');
 			elseif component(1) == 'B'
 			traces = irisFetch.Traces(network,stnm,'*','BH*',event_starttime,event_endtime,'includePZ');
-			save(sta_filename,'traces');
 			end
+			save(sta_filename,'traces');
 		catch e
 			e.message;
 			continue;
