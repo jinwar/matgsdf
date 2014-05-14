@@ -3,6 +3,8 @@ clear;
 javaaddpath('IRIS-WS-2.0.6.jar');
 
 setup_parameters;
+lalim = parameters.lalim;
+lolim = parameters.lolim;
 
 datacache = 'datacache';
 if ~exist('eventmat','dir')
@@ -59,6 +61,8 @@ for ie=1:length(events_info)
 	event_endtime = datestr(otime+parameters.datalength/3600/24,'yyyy-mm-dd HH:MM:SS');
 	stations_info = irisFetch.Stations('channel',parameters.network,...
 						'*','*','LHZ',...
+			'MinimumLatitude', lalim(1), 'MaximumLatitude', lalim(2), ...
+			'MinimumLongitude',lolim(1) ,'MaximumLongitude',lolim(2),
 						'startTime',event_starttime,'endTime',event_endtime);
 	if ~exist(datacache,'dir')
 		mkdir(datacache);
