@@ -5,7 +5,7 @@ clear;
 isrecalulatealpha = 0;
 fixalpha = 1;
 demoip = 4;
-isfigure = 1;
+isfigure = 0;
 
 phase_v_path = './helmholtz/'
 r = 0.05;
