@@ -14,16 +14,16 @@ periods = parameters.periods;
 largest_epidist_range = parameters.largest_epidist_range;
 
 if ~exist('mingroupv')
-    mingroupv = 2;
+    mingroupv = parameters.min_groupv;
 end
 if ~exist('maxgroupv')
-    maxgroupv = 5;
+    maxgroupv = parameters.max_groupv;
 end
 if ~exist('bandnum')
     bandnum = 20;
 end
 if ~exist('center_freq')
-    center_freq = 0.025;
+    center_freq = parameters.cent_freq;
 end
 
 cycle_before = parameters.cycle_before;
@@ -99,7 +99,7 @@ for ista = 1:length(event.stadata)
     taxis = bgtime + [0:Nt-1]'*dt;
     
     % Build up gaussian filter
-    [gausf,faxis] = build_gaus_filter(freqs,dt,Nt,0.06,0.1);
+    [gausf,faxis] = build_gaus_filter(freqs,dt,Nt,parameters.min_width,parameters.max_width);
     
     % get original data and make the fourier transform
     odata = event.stadata(ista).data;

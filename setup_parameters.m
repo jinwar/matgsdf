@@ -27,6 +27,9 @@ parameters.cycle_before = 2;
 parameters.cycle_after = 5;
 parameters.min_dist_tol = deg2km(20);
 parameters.max_dist_tol = deg2km(160);
+parameters.min_groupv = 2;
+parameters.max_groupv = 5;
+parameters.cent_freq = 0.025;
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameters for the cross-correlation measurement
