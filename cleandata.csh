@@ -2,6 +2,6 @@
 
 #rm eventmat/*.mat
 rm CSmeasure/*.mat
-rm winpara/*.mat
+rm winpara/*
 rm eikonal/*.mat
 rm helmholtz/*.mat
