@@ -4,3 +4,4 @@
 rm CSmeasure/*.mat
 rm winpara/*.mat
 rm eikonal/*.mat
+rm helmholtz/*.mat
