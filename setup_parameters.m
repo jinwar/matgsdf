@@ -55,7 +55,7 @@ parameters.tp_tol = 10;  % seconds away from averaged phase velocity
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameters for the tomography
-%
+% (eikonal_eq.m helmholtz_eq.m)
 parameters.smweight_array = 3*[0.4 0.3 0.2 0.2 0.2 0.5 1 2];  % smoothing weight for the deltaSx and delta Sy
 parameters.raydensetol=deg2km(parameters.gridsize)*2;
 parameters.Tdumpweight = 0;  % dumping the ray to the girgle circle path
@@ -71,6 +71,7 @@ parameters.alpha_search_grid = 0.1;
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameter for stacking 
+% (stack_phv.m stack_helm.m)
 parameters.min_csgoodratio=0.3;  % minimum radio between good and bad measurements for a good event
 parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
@@ -82,6 +83,7 @@ parameters.smooth_wavelength = 0.25;
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameters for azimuthal anisotropy inversion
+% beta version
 parameters.smsize = 1;  % averaging nearby grid number
 parameters.off_azi_tol = 30; % differ from great circle path
 parameters.is_one_phi = 1;
