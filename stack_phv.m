@@ -186,9 +186,9 @@ for ip = 1:length(periods)
 	% set(h1,'facecolor','interp');
 	title(['Periods: ',num2str(periods(ip))],'fontsize',15)
 	colorbar
-	avgphv(ip).sumweigth(find(avgphv(ip).sumweigth(:)==0)) = NaN;
+	avgphv(ip).sumweight(find(avgphv(ip).sumweight(:)==0)) = NaN;
 	meanweight = nanmedian(avgphv(ip).sumweight(:));
-	if isnan(meanweight) || meanweigth < 10
+	if isnan(meanweight) || meanweight < 10
 		meanweight = 10;
 	end
 	caxis([0 2*meanweight]);
