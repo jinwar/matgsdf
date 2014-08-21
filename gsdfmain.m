@@ -59,6 +59,10 @@ for ie = 1:length(matfiles)
 		disp(['Found ',matfilename,', skip this event!']);
 		continue;
 	end
+	if isfield(event,'isgood') && ~event.isgood
+		disp(['Manually move',matfilename,', skip this event!']);
+		continue;
+	end
 	disp(['Start to work on event: ',event.id]);
 
 	% set up some useful arrays

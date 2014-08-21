@@ -17,7 +17,13 @@ N_trace = 20;
 stlas = [stadata.stla];
 stlos = [stadata.stlo];
 [dists azi] = distance(evla,evlo,stlas,stlos);
-dist_range = [min(dists)-1 max(dists)+1];
+
+corner_dists(1) = distance(evla,evlo,lalim(1),lolim(1));
+corner_dists(2) = distance(evla,evlo,lalim(1),lolim(2));
+corner_dists(3) = distance(evla,evlo,lalim(2),lolim(1));
+corner_dists(4) = distance(evla,evlo,lalim(2),lolim(2));
+dist_range = [min(corner_dists) max(corner_dists)];
+%dist_range = [min(dists)-1 max(dists)+1];
 
 % prepare the data
 for ista=1:length(stadata);
