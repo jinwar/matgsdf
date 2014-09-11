@@ -44,10 +44,8 @@ parameters.min_width = 0.06;  % to build up gaussian filters
 parameters.max_width = 0.10;  
 parameters.wintaperlength = 30;   % taper to build up the isolation filter
 parameters.prefilter = [10,200];
-parameters.xcor_win_halflength = 100;  % window for the cross-correlation
-parameters.xcor_win_iter = zeros(size(parameters.periods));
-ind = find(parameters.periods > 40);
-parameters.xcor_win_iter(ind) = 1; % re-apply the xcor window due to measured group delay, should be same length as periods
+parameters.xcor_win_halflength = 150;  % window for the cross-correlation
+parameters.xcor_win_iter = zeros(size(parameters.periods)); % re-apply the xcor window due to measured group delay, should be same length as periods, not used anymore
 parameters.Nfit = 2;
 parameters.Ncircle = 5;
 parameters.cohere_tol = 0.5; % minimum coherenecy between two stations
@@ -72,14 +70,16 @@ parameters.alpha_search_grid = 0.1;
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameter for stacking 
 % (stack_phv.m stack_helm.m)
-parameters.min_csgoodratio=0.3;  % minimum radio between good and bad measurements for a good event
+parameters.min_csgoodratio=[3 3 3 3 5 10 15 15]; % minimum radio between good and bad measurements for a good event
 parameters.min_phv_tol = 3;
 parameters.max_phv_tol = 5;
 parameters.is_raydense_weight = 1;
 parameters.min_event_num = 10;
-parameters.err_std_tol = 4;
+parameters.err_std_tol = 2;
 parameters.issmoothmap = 1;
 parameters.smooth_wavelength = 0.25;
+parameters.event_bias_tol = 2;
+
 
 %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%% %%%%
 % parameters for azimuthal anisotropy inversion

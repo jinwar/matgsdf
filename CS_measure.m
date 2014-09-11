@@ -118,7 +118,9 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 	CS.win_cent_t = win_cent_t;
 	CS.ddist = dist1 - dist2;
 	% apply the window function
-	win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
+	%win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
+	win_xcor = flat_hanning_win(lag,xcor,win_cent_t-xcor_win_halflength,win_cent_t+xcor_win_halflength,round(xcor_win_halflength/2));
+
 
 	if isfigure
 		figure(44)
@@ -146,16 +148,6 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		nband_win_xcors(:,ip) = nband;
 	end % end of periods loop
 
-	if isfigure
-		figure(45)
-		clf
-		[xi yi] = ndgrid(lag,periods);
-		for ip = 1:length(periods)
-			norm_nbands(:,ip) = nband_win_xcors(:,ip)./max(abs(nband_win_xcors(:,ip)));
-		end
-		contourf(xi,yi,norm_nbands);
-		xlim([-3*max(periods) 3*max(periods)]);
-	end
 
 	% fitting with five-parameter wavelet
 	for ip = 1:length(periods)
@@ -175,7 +167,9 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		if xcor_win_iter(ip)
 			% re-center the window
 			win_cent_t = CS.dtg(ip);
-			win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
+			%win_xcor = hanning_win(lag,xcor,win_cent_t,xcor_win_halflength*2);
+			win_xcor = flat_hanning_win(lag,xcor,win_cent_t-xcor_win_halflength,win_cent_t+xcor_win_halflength,round(xcor_win_halflength/2));
+
 			fft_win_xcor = fft(win_xcor);
 			if size(fft_win_xcor) == 1,fft_win_xcor = fft_win_xcor'; end
 			% narrow-band filter
@@ -202,5 +196,22 @@ function CS = CS_measure(event,sta1,sta2,parameters)
 		[temp besti] = min(abs(testdtp - syndtp));
 		CS.dtp(ip) = testdtp(besti);
 	end
+
+	if isfigure
+		figure(45)
+		clf
+		hold on
+		[xi yi] = ndgrid(lag,periods);
+		for ip = 1:length(periods)
+			norm_nbands(:,ip) = nband_win_xcors(:,ip)./max(abs(nband_win_xcors(:,ip)));
+		end
+		contourf(xi,yi,norm_nbands);
+		for ip=1:length(periods)
+			plot(CS.dtp(ip),periods(ip),'kx','linewidth',2);
+		end
+		xlim([-3*max(periods) 3*max(periods)]);
+        	pause
+	end
+
 
 end % end of function
