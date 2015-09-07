@@ -39,6 +39,7 @@ events_info = irisFetch.Events('startTime',start_time,'endTime',end_time,...
 
 % data download and preparation
 for ie=1:length(events_info)
+	clear event
 	% gather event information
 	otime = datenum(events_info(ie).PreferredTime,'yyyy-mm-dd HH:MM:SS.FFF');
 	eventid = datestr(otime,'yyyymmddHHMM');
