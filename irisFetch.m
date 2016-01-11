@@ -1,10 +1,12 @@
 classdef irisFetch
+    
    % IRISFETCH allows seamless access to data stored within the IRIS-DMC via FDSN services
    %
    % irisFetch Methods:
    %
    % irisFetch waveform retrieval Methods:
    %    Traces - retrieve sac-equivalent waveforms with channel metadata
+   %    SACfiles - as Traces above, but saves directly to a SAC file.
    %
    % irisFetch FDSN station webservice Methods:
    %    Channels - retrieve metadata as an array of channels
@@ -14,11 +16,13 @@ classdef irisFetch
    % irisFetch FDSN event webservice Methods:
    %    Events - retrieve events parameters (such as origins and magnitudes) from a catalog
    %
-   % irisFetch miscelleneous Methods:
+   % irisFetch miscellaneous Methods:
    %    Resp - retrive RESP formatted response data from the irisws-resp service
    %    version - display the current version number
    %    connectToJar - attempt to connect to the required IRIS-WS JAR file
-   %    runExamples - displays and runs some sample queries to the web service.
+   %    runExamples - displays and runs some sample queries to the web service
+   %    Trace2SAC - writes a trace structure to a SAC file
+   %    SAC2Trace - reads one or more locally stored SAC files to a trace structure 
    %
    %  irisFetch requires version 2.0 or greater of the IRIS Web Services Library java jar
    %  for more details, click on 'connectToJar' above.
@@ -31,7 +35,7 @@ classdef irisFetch
    
    % Celso Reyes, Rich Karstens
    % IRIS-DMC
-   % JUNE 2013
+   % February 2014
    
    %{
  *******************************************************************************
@@ -55,9 +59,9 @@ classdef irisFetch
    %}
    
    properties (Constant = true)
-      VERSION           = '2.0.1';  % irisFetch version number
+      VERSION           = '2.0.7';  % irisFetch version number
       DATE_FORMATTER    = 'yyyy-mm-dd HH:MM:SS.FFF'; %default data format, in ms
-      MIN_JAR_VERSION   = '2.0.2'; % minimum version of IRIS-WS jar required for compatibility
+      MIN_JAR_VERSION   = '2.0.4'; % minimum version of IRIS-WS jar required for compatibility
       
       VALID_QUALITIES   = {'D','R','Q','M','B'}; % list of Qualities accepted by Traces
       DEFAULT_QUALITY   = 'B'; % default Quality for Traces
@@ -86,12 +90,68 @@ classdef irisFetch
          ); %details for MATLAB to JAVA conversions
       appName           = ['MATLAB:irisFetch/' irisFetch.VERSION]; %used as useragent of queries
       recursionAssert   = false; %check for recursions while parsing java into structs
+      FEDERATOR_TRIGGER = 'FEDERATED';
+      FEDERATOR_BASEURL = 'http://service.iris.edu/irisws/fedcatalog/1/';
+      FEDERATOR_LABELS = {'DATACENTER','RESPSERVICE','EVENTSERVICE','STATIONSERVICE','DATASELECTSERVICE','SACPZSERVICE'};
    end %hidden constant properties
    
    methods(Static)
       function v = version()
          v = irisFetch.VERSION;
       end
+      
+      function Trace2SAC(traces, writeDirectory, verbosity)
+         % irisFetch.Trace2SAC(traces, writeDirectory)
+         %
+         % Writes a trace structure to a SAC file within 'writeDirectory'
+         % All output SAC filenames are automatically generated.
+         %
+         %   INPUTS
+         %     traces: the Traces struct for writting to SAC file(s).
+         %     writeDirectory: name of output directory
+         
+         if ~exist('verbosity','var')
+            verbosity = false;
+         end
+         irisFetch.write_sac_out(writeDirectory, traces, verbosity);
+      end
+      
+      function tr = SAC2Trace(file_dir_name)
+          % tr = irisFetch.SAC2Trace(file_dir_name)
+          %
+          % Reads in SAC file(s) into a Trace structure.
+          % NOTE: Only binary SAC files are supported at this time.
+          %
+          %   INPUTS
+          %     file_dir_name: Name of input file(s) or directory
+          %       -If a directory is specified, then all files within that
+          %       directory with the extension .sac or .SAC will be loaded.
+          %       -Wildcard characters ('*' or '?') are valid.
+          %
+          %   OUTPUTS
+          %     tr: Trace structure, as returned by irisFetch.Traces
+          
+          tr = irisFetch.read_sac_in(file_dir_name);
+      end
+      
+      %% TRACE/DATASELECT related STATIC, PUBLIC routines
+      
+      function SACfiles(network, station, location, channel, startDate, endDate, writeDirectory, varargin)
+         % irisFetch.SACfiles(network, station, location, channel, startDate, endDate, writeDirectory,...)
+         %   As with irisFetch.Traces, but waveform data will be written out as SAC files
+         %   to a directory specified by 'writeDirectory'
+         %
+         %   The 'writeDirectory' parameter is mandatory. If 'writeDirectory' does not exist, then
+         %   it will be created.
+         %
+         %   NOTE: unlike the Traces method, no structures will be saved in your MATLAB workspace
+         %   if this method is used.
+         %
+         %   see irisFetch.Traces for more information on specifying channel identifier inputs
+         
+         irisFetch.Traces(network, station, location, channel, startDate, endDate, ['WRITESAC:', writeDirectory], 'ASJAVA', varargin{:});
+      end
+      
       
       function ts = Traces(network, station, location, channel, startDate, endDate, varargin )
          %irisFetch.Traces retrieves sac-equivalent waveform with channel metadata
@@ -120,11 +180,22 @@ classdef irisFetch
          %     Sample:
          %       unamepwd = {'nobody@iris.edu', 'anonymous'}
          %
+         %  tr = irisFetch.Traces(...,'federated') first queries the
+         %  fedcatalog service to determine the holdings from each
+         %  datacenter that match the request.  Then, irisFetch retrieves
+         %  the traces from the datacenter. See additional FEDERATED note
+         %  below.
+         %
          %  tr = irisFetch.Traces(..., urlbase) will allow traces to be read from an
          %  alternate data center. url base is only the first part of the web address. For
          %  example, the IRIS datacenter would be 'http://service.iris.edu/'. These
          %  settings are "sticky", so that all calls for waveform data or station metadata
          %  will go to that datacenter until a new one is specified.
+         %
+         %  tr = irisFetch.Traces(..., 'WRITESAC:writeDir') will retrieve seismic traces
+         %  and then write a SAC file to the directory specified by 'writeDir' for each
+         %  trace structure. This method will also store the retrieved waveform data in
+         %  the MATLAB workspace.
          %
          %  ABOUT THE RETURNED TRACE
          %    The returned trace(s) will be a 1xN array of structs. Each struct contains
@@ -134,6 +205,34 @@ classdef irisFetch
          %    If the requested data does not exist, then an empty (1x0) trace struct will be
          %    returned. If the original data contains data gaps, then each continuous data
          %    segment will be returned as its own trace.
+         %
+         %  ABOUT FEDERATED DATA
+         %    When traces are received via the "federated" catalog, they
+         %    are grouped by datacenter.  The result will be a structure,
+         %    containing fields with the name of the data center.
+         %    Using a concrete example, if I request:
+         %      tr = irisFetch.Traces('?R','A*','*','BHZ','2010-02-27 6:30:00', '2010-02-27 6:31:00','federated')
+         %
+         %    irisFetch first queries the federator service located at:
+         %        http://service.iris.edu/irisws/fedcatalog/1/
+         %    which returns matches at three datacenters:
+         %       3 matches at BGR (http://eida.bgr.de)
+         %       9 matches at IRISDMC (http://ds.iris.edu)
+         %       4 matches at RESIF (http://www.resif.fr)
+         %    it then retrieves each trace, one after the other. Placing
+         %    them into a final structure which contains the data that was
+         %    successfully retrieved:
+         %       tr =
+         %           BGR: [1x3 struct]
+         %       IRISDMC: [1x7 struct]
+         %         RESIF: [1x2 struct]
+         %
+         %  * Side effect of retrieving data from other datacenters:
+         %    The java library used by irisfetch remembers the last
+         %    datacenter. So if you then try to retrieve data without the
+         %    'federated' method, it might search in the wrong center.  To
+         %    fix, either clear java or send a federated request that finds
+         %    data at your specific datacenter.
          %
          %  COMMON MANIPULATIONS:
          %
@@ -156,43 +255,135 @@ classdef irisFetch
          %
          %  SEE ALSO datestr
          
-         if ~exist('extensions.fetch.TraceData','class')
+         
+         if ~exist('edu.iris.dmc.extensions.fetch.TraceData','class')
             irisFetch.connectToJar()
          end
          
          import edu.iris.dmc.*
-         % import edu.iris.dmc.*
          
-         % these variables are shared among all the nested functions
-         getsacpz    = false;
-         verbosity   = false;
-         authorize   = false;
-         quality     = irisFetch.DEFAULT_QUALITY;
-         username    = '';
-         userpwd     = '';
-         newbase     = '';
          safeLocation = @(x) strrep(x,' ','-');
+         str2webdate = @(x) strrep(x,' ', 'T'); % 'YYYY-MM-DD hh:mm:ss' -> 'YYYY-MM-DDThh:mm:ss'
+         web2strdate = @(x) strrep(x,'T',' ');
          
-         extractAdditionalArguments(varargin);
-         
-         startDateStr   = irisFetch.makeDateStr(startDate);
-         endDateStr     = irisFetch.makeDateStr(endDate);
+         opts = setOptions(varargin);
+         dbPrint = irisFetch.getDBfprintf(opts.verbosity);
+         % startDateStr   = irisFetch.makeDateStr(startDate);
+         % endDateStr     = irisFetch.makeDateStr(endDate);
          location       = safeLocation(location);
          
          tracedata      = edu.iris.dmc.extensions.fetch.TraceData();
          tracedata.setAppName(irisFetch.appName);
-         tracedata.setVerbosity(verbosity);
-         if ~isempty(newbase); tracedata.setBASE_URL(newbase);end;
-         getTheTraces();
+         tracedata.setVerbosity(opts.verbosity);
+         tracedata = setBaseUrl(tracedata, opts.newbase);
+         
+         if ~opts.useFederator
+            ts = getTheTraces(network, station, location, channel, startDate, endDate, opts);
+         else
+            ts = getResultsFromFederator(network, station, location, channel, startDate, endDate, opts);
+         end
          
          return
          
          % ---------------------------------------------------------------
          % END TRACES: MAIN
          % ===============================================================
+         function td = setBaseUrl(td, newbase)
+            if ~isempty(newbase)
+               if newbase(end) ~= '/'; newbase = [newbase, '/']; end
+               dbPrint ('Using services at base: %s\n', newbase);
+            end
+         end
          
+         function [svc, url, mykey] = parseFederatedHeaderLine(A)
+            [svc,A] = splitString(A,'=');
+            assert(ismember(svc, irisFetch.FEDERATOR_LABELS), '%s isn''t a known label\n',svc);
+            switch svc
+               case 'DATACENTER'
+                  [mykey, url] = splitString(A,',');
+               otherwise
+                  mykey = '';
+                  url = A;
+            end
+         end
          
-         function extractAdditionalArguments(argList)
+         function [s1, s2] = splitString(s, tok)
+            [s1, s2] = strtok(s, tok);
+            if ~isempty(s2)
+               s2(1)='';
+            end
+         end
+         
+         function tracesByDatacenter = getResultsFromFederator(network, station, location, channel, startDateStr, endDateStr, opts)
+            tracesByDatacenter = struct;
+            stD = str2webdate(irisFetch.makeDateStr(startDateStr));
+            edD = str2webdate(irisFetch.makeDateStr(endDateStr));
+            q = sprintf('net=%s&sta=%s&loc=%s&cha=%s&start=%s&end=%s',...
+               network, station, location, channel, stD, edD);
+            fullquery = [irisFetch.FEDERATOR_BASEURL, 'query?',  q];
+            dbPrint('Fetching federator catalog results :: ');
+            fedResults = urlread(fullquery);
+            dbPrint('%d Bytes\n',numel(fedResults));
+            dbPrint(fedResults)
+            assignin('base','fedResults',fedResults);
+            
+            a = textscan(fedResults, '%s %s %s %s %s %s');
+            nets = a{1}; stas = a{2}; locs = a{3}; chas = a{4};
+            stts = a{5}; edts = a{6};
+            
+            isHeader = cellfun(@isempty, stas);
+            starttimer = tic;
+            dstic = [];
+            for row = 1 : numel(nets);
+               if isHeader(row)
+                  [svc, url, newDataCenter] = parseFederatedHeaderLine(nets{row});
+                  if newDataCenter
+                     flush()
+                     currDataCenter = newDataCenter;
+                     fprintf('Fetching data from %s (%s)\n',...
+                        newDataCenter, url)
+                  end
+                  switch svc
+                     case 'DATASELECTSERVICE'
+                        tracedata.setWAVEFORM_URL(url)
+                     case 'SACPZSERVICE'
+                        tracedata.setSACPZ_URL(url)
+                     case 'STATIONSERVICE'
+                        tracedata.setSTATION_URL(url)
+                  end
+                  dbPrint('[%s] : %-10s > %s\n',currDataCenter, svc, url');
+               else
+                  network = nets{row};
+                  station = stas{row};
+                  location = locs{row};
+                  channel = chas{row};
+                  startDateStr = web2strdate(stts{row});
+                  endDateStr = web2strdate(edts{row});
+                  %q = sprintf('net=%s&sta=%s&loc=%s&cha=%s&start=%s&end=%s',...
+                  %   network, station, location, channel, startDateStr, endDateStr);
+                  dbPrint('query : %s\n', q);
+                  tmp = getTheTraces(network, station, location, channel, startDateStr, endDateStr, opts);
+                  if exist('ts','var')
+                     ts = [ts tmp];
+                  else
+                     ts = tmp;
+                  end
+               end
+            end
+            flush()
+            fprintf('DONE at %s (Total time:%3.1f seconds)\n',datestr(now),toc(starttimer));
+            function flush()
+               if exist('ts','var')
+                  tracesByDatacenter.(currDataCenter) = ts;
+                  fprintf('Received %d channels in %3.1f seconds\n',...
+                     numel(ts), toc(dstic) );
+                  clear ts
+               end
+               dstic = tic;
+            end
+         end
+         
+         function opts = getUserOptions(opts, argList)
             % extracts getsacpz, verbosity, authorize, quality, username, and userpwd
             % Parameters are handled "intelligently" so that [paramname, paramval] pairs
             % aren't necessry
@@ -203,57 +394,79 @@ classdef irisFetch
                   case 'cell'
                      assert(numel(param)==2 && all(cellfun(@ischar, param)),...
                         'A cell parameter is assumed to contain credentials. eg. {''nobody@iris.edu'',''anonymous''}.');
-                     [username, userpwd] = deal(param{:});
-                     authorize         = true;
+                     [opts.username, opts.userpwd] = deal(param{:});
+                     opts.authorize         = true;
                   case 'char'
                      switch upper(param)
                         case irisFetch.VALID_QUALITIES
-                           quality     = param;
+                           opts.quality     = param;
                         case {'INCLUDEPZ'}
-                           getsacpz    = true;
+                           opts.getsacpz    = true;
                         case {'VERBOSE'}
-                           verbosity   = true;
+                           opts.verbosity   = true;
+                        case {'ASJAVA'}
+                           opts.convertToMatlab = false;
+                        case {'SACONLY'}
+                           opts.convertToMatlab = false;
+                           opts.getsacpz = false;
+                           opts.saveSAC = true;
+                           opts.writeDirectory = pwd;
+                        case {irisFetch.FEDERATOR_TRIGGER}
+                           opts.useFederator = true;
                         otherwise
+                           
                            if length(param)>7 && strcmpi(param(1:7),'http://')
                               % set the bases
-                              newbase = param;
+                              opts.newbase = param;
+                           elseif length(param) >= 8 && strcmpi(param(1:8),'WRITESAC')
+                              % expecting 'WRITESAC' or
+                              % 'WRITESAC:full/directory/path'
+                              opts.saveSAC = true;
+                              if length(param) <9
+                                 opts.writeDirectory = pwd;
+                              else
+                                 opts.writeDirectory = param(10:end);
+                              end
                            else
-                           error('IRISFETCH:Trace:unrecognizedParameter',...
-                              'The text you included as an optional parameter did not parse to either a qualitytype (D,R,Q,M,B) or ''INCLUDEPZ'' or ''VERBOSE''');
+                              error('IRISFETCH:Trace:unrecognizedParameter',...
+                                 'The text you included as an optional parameter did not parse to either a qualitytype (D,R,Q,M,B) or ''INCLUDEPZ'' or ''VERBOSE'' or a service base URL');
                            end
                      end
-                     %case 'logical' DEPRECATED
-                     %   verbosity         = param; % old usage, deprecated.
                   otherwise
                      error('IRISFETCH:Trace:unrecognizedParameter',...
                         'The optional parameter wasn''t recognized. %s', class(param));
                end
+            end            
+            if opts.verbosity %cannot use dbPrint here, because this function gets called BEFORE dbPrint declared
+               disp({'spz:',opts.getsacpz,'vb:',opts.verbosity,...
+               'auth:',opts.authorize,'qual:',opts.quality,...
+               'un&pw:',opts.username,repmat('*',size(opts.userpwd))});
             end
-            
-            if verbosity
-               disp({'spz:',getsacpz,'vb:',verbosity,'auth:',authorize,'qual:',quality,'un&pw:',username,userpwd});
-            end
-            
          end % extractAdditionalArguments
          
-         function getTheTraces()
+         function ts = getTheTraces(N, S, L, C, startDateStr, endDateStr, opts)
+            traces=[];
+            startDateStr = irisFetch.makeDateStr(startDateStr);
+            endDateStr = irisFetch.makeDateStr(endDateStr);
             try
-               if authorize
-                  if verbosity
-                     fprintf('traces = tracedata.fetchTraces("%s", "%s", "%s", "%s", "%s", "%s", ''%s'', %d, "%s", "%s")\n',...
-                        network, station, location, channel, startDateStr, endDateStr, quality, getsacpz, username, char(userpwd - userpwd + 42));
-                  end
-                  traces = tracedata.fetchTraces(network, station, location, channel, ...
-                     startDateStr, endDateStr, quality, getsacpz, username, userpwd);
+               if opts.authorize
+                  dbPrint('traces = tracedata.fetchTraces("%s", "%s", "%s", "%s", "%s", "%s", ''%s'', %d, "%s", "%s")\n',...
+                        N, S, L, C, startDateStr, endDateStr, opts.quality, opts.getsacpz, opts.username, repmat('*',size(opts.userpwd)));
+                  traces = tracedata.fetchTraces(N, S, L, C, ...
+                     startDateStr, endDateStr, opts.quality, opts.getsacpz, opts.username, opts.userpwd);
                else
-                  if verbosity
-                     fprintf('traces = tracedata.fetchTraces("%s", "%s", "%s", "%s", "%s", "%s", ''%s'', %d)\n',...
-                        network, station, location, channel, startDateStr, endDateStr, quality, getsacpz);
-                  end
-                  traces = tracedata.fetchTraces(network, station, location, channel, ...
-                     startDateStr, endDateStr, quality, getsacpz);
+                  dbPrint('traces = tracedata.fetchTraces("%s", "%s", "%s", "%s", "%s", "%s", ''%s'', %d)\n',...
+                        N, S, L, C, startDateStr, endDateStr, opts.quality, opts.getsacpz);
+                  traces = tracedata.fetchTraces(N, S, L, C, ...
+                     startDateStr, endDateStr, opts.quality, opts.getsacpz); %db removed (;)
                end
+               dbPrint('tracedata.fetchTraces successfully completed, resulting in %d traces before converting\n', numel(traces));
             catch je
+               % Debug messages:
+               dbPrint('An [%s] exception occurred in irisFetch.getTheTraces() but was caught\n full text follows:\nmessage:\n%s\n\n', je.identifier,je.message) %db
+               %disp(je.cause); %db
+               %disp(je.stack); %db
+               
                switch je.identifier
                   case 'MATLAB:Java:GenericException'
                      if any(strfind(je.message,'URLNotFoundException'));
@@ -261,26 +474,61 @@ classdef irisFetch
                            'Trace found no requested data and returned the following error:\n%s',...
                            je.message);
                      end
+                     if any(strfind(je.message,'java.io.IOException: edu.iris.dmc.service.UnauthorizedAccessException'));
+                        error('IRISFETCH:Trace:UnauthorizedAccessException',...
+                           'Invalid Username and Password combination\n');
+                     end
+                     if any(strfind(je.message,'NoDataFoundException'));
+                        if opts.verbosity
+                           warning('IRISFETCH:Trace:URLNotFoundException',...
+                              'Trace found no requested data and returned the following error:\n%s',...
+                              je.message);
+                        end
+                     end
                   otherwise
                      fprintf('Exception occured in IRIS Web Services Library: %s\n', je.message);
+                     rethrow(je)
                end
-               rethrow(je)
             end
             
-            ts = irisFetch.convertTraces(traces);
+            if opts.saveSAC
+               irisFetch.write_sac_out(opts.writeDirectory, traces, opts.verbosity);
+            end
+            
+            if opts.convertToMatlab
+               ts = irisFetch.convertTraces(traces);
+            else
+               ts = traces;
+               warning('in-house experimental: returning the java traces instead of a matlab struct.');
+            end
             clear traces
             
          end %function getTheTraces
+         function opts = setOptions(args)
+            opts.getsacpz    = false;
+            opts.verbosity   = false;
+            opts.authorize   = false;
+            opts.quality     = irisFetch.DEFAULT_QUALITY;
+            opts.username    = '';
+            opts.userpwd     = '';
+            opts.newbase     = '';
+            opts.useFederator = false;
+            opts.writeDirectory = '';
+            opts.convertToMatlab = true;
+            opts.saveSAC = false;
+            opts = getUserOptions(opts, args);
+         end
       end % Traces
       
+      %% STATION related STATIC, PUBLIC routines
       function [channelStructure, urlParams] = Channels(detailLevel, varargin)
          %irisFetch.Channels retrieves station metadata from IRIS-DMC as an array of channels
          %  s = irisFetch.Channels(DETAIL,NETWORK,STATION,LOCATION,CHANNEL) retrieves
-         %  station metadata from the IRIS-DMC into an array of channels.  DETAIL is one of 
+         %  station metadata from the IRIS-DMC into an array of channels.  DETAIL is one of
          %  'CHANNEL', or 'RESPONSE' and should be explicitly declared. DETAIL defaults to 'CHANNEL'
          %  Network, station, location, and channel parameters are passed directly to the
-         %  java library, so both comma-separated  lists and wildcards (? and *) are accepted.  
-         %  
+         %  java library, so both comma-separated  lists and wildcards (? and *) are accepted.
+         %
          %  All five parameters are required for all queries, but may be wildcarded by
          %  using '' for their values.
          %
@@ -303,7 +551,7 @@ classdef irisFetch
          
          if isempty(detailLevel)
             detailLevel = 'CHANNEL';
-         end         
+         end
          assert(ismember(upper(detailLevel),{'CHANNEL','RESPONSE'}),...
             'To retrieve channels, the detailLevel must be either ''CHANNEL'' or ''RESPONSE''');
          [channelStructure, urlParams] = irisFetch.Networks(detailLevel, varargin{:});
@@ -321,7 +569,7 @@ classdef irisFetch
          %
          %  Network, station, location, and channel parameters are passed directly to the
          %  java library, so both comma-separated lists and wildcards (? and *) are accepted.
-         %  
+         %
          %  All five parameters are required for all queries, but may be wildcarded by
          %  using '' for their values.
          %
@@ -344,7 +592,7 @@ classdef irisFetch
          
          if isempty(detailLevel)
             detailLevel = 'STATION';
-         end         
+         end
          assert(ismember(upper(detailLevel),{'STATION','CHANNEL','RESPONSE'}),...
             'To retrieve stations, the detailLevel must be either ''STATION'', ''CHANNEL'', or ''RESPONSE''');
          [stationStructure, urlParams] = irisFetch.Networks(detailLevel,varargin{:});
@@ -360,8 +608,8 @@ classdef irisFetch
          %  all queries, but may be wildcarded by using '' for their values. Network,
          %  station, location, and channel parameters are passed directly to the java
          %  library, so both comma-separated lists and wildcards (? and *) are accepted.
-         %  Detail is one of 'NETWORK','STATION','CHANNEL', or 'RESPONSE' and should be  
-         %  explicitly declared. Defaults to 'NETWORK' 
+         %  Detail is one of 'NETWORK','STATION','CHANNEL', or 'RESPONSE' and should be
+         %  explicitly declared. Defaults to 'NETWORK'
          %
          %  [s, myParams] = irisFetch.Networks( ... ) also returns the URL parameters that
          %  were used to make the query.
@@ -412,10 +660,10 @@ classdef irisFetch
          if ~exist('criteria.StationCriteria','class')
             irisFetch.connectToJar()
          end
-                  
+         
          if isempty(detailLevel)
             detailLevel = 'NETWORK';
-         end         
+         end
          
          verifyArguments(nargin);
          setOutputLevel();
@@ -445,7 +693,6 @@ classdef irisFetch
          function setOutputLevel()
             try
                outputLevel = edu.iris.dmc.criteria.OutputLevel.(upper(detailLevel));
-               % outputLevel = edu.iris.dmc.criteria.OutputLevel.(upper(detailLevel));
             catch je
                switch je.identifier
                   case 'MATLAB:undefinedVarOrClass'
@@ -500,7 +747,6 @@ classdef irisFetch
             pv = varargin(2:2:end);
          end
          
-         
          function setCriteria()
             crit = edu.iris.dmc.criteria.StationCriteria;
             %crit = edu.iris.dmc.criteria.StationCriteria;
@@ -536,6 +782,7 @@ classdef irisFetch
          
       end %Networks
       
+      %% EVENT related STATIC, PUBLIC routines
       function [events, urlParams] = Events(varargin)
          %irisFetch.Events retrieves event data from the IRIS-DMC
          %  ev = irisFetch.Events(param, value [, ...]) retrieves event data from the
@@ -622,7 +869,40 @@ classdef irisFetch
          events=irisFetch.parser_for_IRIS_WS_2_0_0(j_events);
          % v2.0 uses Preferred, while original code uses "Primary"
       end
-            
+      
+      
+      %% RESPONSE related STATIC, PLUBLIC routines
+      function [respstructures, urlparams] = Resp(network, station, location, channel, starttime, endtime)
+         % retrieve the RESP information into a character string.
+         % net, sta, loc, and cha are all required.
+         % channels and locations may be wildcarded using either ? or *
+         % starttime and endtime options may be ignored by using [] instead of a time.
+         
+         import edu.iris.dmc.*
+         
+         %crit = edu.iris.dmc.criteria.RespCriteria();
+         crit = criteria.RespCriteria();
+         crit.setNetwork(network);
+         crit.setStation(station);
+         crit.setLocation(location);
+         crit.setChannel(channel);
+         if ~isempty(starttime)
+            crit.setStartTime(irisFetch.mdate2jdate(starttime));
+         end
+         if ~isempty(endtime)
+            crit.setEndTime(irisFetch.mdate2jdate(endtime));
+         end
+         urlparams = char(crit.toUrlParams());
+         
+         serviceManager = edu.iris.dmc.service.ServiceUtil.getInstance();
+         baseUrl = 'http://service.iris.edu/irisws/resp/1/';
+         serviceManager.setAppName(['MATLAB:irisFetch/' irisFetch.version()]);
+         service = serviceManager.getRespService(baseUrl);
+         respstructures= char(service.fetch(crit));
+      end
+      
+      %% HELPER ROUTINES
+      
       function connectToJar(isSilent)
          %irisFetch.connectToJar connects to the jar for this MATLAB session
          %  irisFetch.connectToJar() searches the javaclasspath for the
@@ -662,35 +942,6 @@ classdef irisFetch
                'Unable to access the default jar.  Please download and add the latest IRIS-WS-JAR to your javaclasspath.');
          end
       end
-            
-      function [respstructures, urlparams] = Resp(network, station, location, channel, starttime, endtime)
-         % retrieve the RESP information into a character string.
-         % net, sta, loc, and cha are all required.
-         % channels and locations may be wildcarded using either ? or *
-         % starttime and endtime options may be ignored by using [] instead of a time.
-         
-         import edu.iris.dmc.*
-         
-%          crit = edu.iris.dmc.criteria.RespCriteria();
-         crit = criteria.RespCriteria();
-         crit.setNetwork(network);
-         crit.setStation(station);
-         crit.setLocation(location);
-         crit.setChannel(channel);
-         if ~isempty(starttime)
-            crit.setStartTime(irisFetch.mdate2jdate(starttime));
-         end
-         if ~isempty(endtime)
-            crit.setEndTime(irisFetch.mdate2jdate(endtime));
-         end
-         urlparams = char(crit.toUrlParams());
-         
-         serviceManager = edu.iris.dmc.service.ServiceUtil.getInstance();
-         baseUrl = 'http://service.iris.edu/irisws/resp/1/';
-         serviceManager.setAppName(['MATLAB:irisFetch/' irisFetch.version()]);
-         service = serviceManager.getRespService(baseUrl);
-         respstructures= char(service.fetch(crit));
-      end
       
       function runExamples()
          delay=1; % seconds
@@ -709,7 +960,7 @@ classdef irisFetch
             'datetick;'
             ' '
             '% next, get some station data (same data, at different levels of detail'
-            'n = irisFetch.Networks(''Response'',''IU'',''ANMO'','''',''BHZ'')';
+            'n = irisFetch.Networks(''Response'',''IU'',''ANMO'','''',''BHZ'',''baseurl'',''http://service.iris.edu/fdsnws/station/1/'')';
             's = irisFetch.Stations(''Response'',''IU'',''ANMO'','''',''BHZ'')';
             'c = irisFetch.Channels(''Response'',''IU'',''ANMO'','''',''BHZ'')';
             ' '
@@ -742,22 +993,22 @@ classdef irisFetch
          %  flatStruct = irisFetch.flattenToChannel(networkTree) takes the hierarchy
          %  returned by irisFetch.Networks, and returns a 1xN array of channels  (channel
          %  epochs, technically).
-         % 
+         %
          %  flatStruct is an array containing ALL channel epochs.
-                           
+         
          assert(isa(networkTree,'struct'),'Cannot Flatten a non-structure');
          
          %eliminate stations that have no channels
          for n=1:numel(networkTree)
             hasNoChannel = arrayfun(@(x) isempty(x.Channels),networkTree(n).Stations);
             networkTree(n).Stations(hasNoChannel) = []; % networkTree(n).Stations(~hasNoChannel);
-         end         
+         end
          
          %eliminate networks that have no stations
-         networksWithoutStations = arrayfun(@(x) isempty(x.Stations),networkTree);         
+         networksWithoutStations = arrayfun(@(x) isempty(x.Stations),networkTree);
          networkTree(networksWithoutStations) = [];
          
-         if isempty(networkTree); 
+         if isempty(networkTree);
             warning('IRISFETCH:flattenToChannel:noValidChannels','No channels found, returning an empty array');
             return
          end
@@ -781,7 +1032,7 @@ classdef irisFetch
             end
          end
          tmp = [networkTree.Stations];
-         channelList=[tmp.Channels];    
+         channelList=[tmp.Channels];
          
          clear tmp
          % now, reorder to make it visually coherent.
@@ -810,7 +1061,7 @@ classdef irisFetch
          %returns a 1xN array of stations (station epochs, technically).
          
          assert(isa(networkTree,'struct'),'Cannot Flatten a non-structure');
-                  
+         
          emptyNetworks = arrayfun(@(x) isempty(x.Stations),networkTree);
          
          for n=1:numel(networkTree)
@@ -823,7 +1074,7 @@ classdef irisFetch
          stationList = [networkTree(~emptyNetworks).Stations];
          
          for m=1:numel(stationList)
-               stationList(m).StationName = stationList(m).Site.Name;
+            stationList(m).StationName = stationList(m).Site.Name;
          end
          
          % now, reorder to make it visually coherent.
@@ -844,7 +1095,7 @@ classdef irisFetch
          neworder = [fieldsattop; fn];
          stationList = orderfields(stationList, neworder);
       end
-     
+      
       function [js, je] = testResp(starttime, endtime)
          n=now;
          testThis('IU','ANMO','00','BHZ',[],[]);
@@ -889,7 +1140,7 @@ classdef irisFetch
                   parampairs = [parampairs, {'endtime',ed}];
                end
                
-               [s,code]=urlread('http://service.iris.edu/irisws/resp/1/query','get', parampairs); %#ok<NASGU>
+               [s,~]=urlread('http://service.iris.edu/irisws/resp/1/query','get', parampairs);
                
                assert(strcmp(r,s));
             catch myerror
@@ -929,9 +1180,9 @@ classdef irisFetch
          end %fn showTimeInDetail
       end %fn testResp
    end %static hidden methods
-  
    
-   methods(Static, Access=protected)      
+   
+   methods(Static, Access=protected)
       function myDateStr = makeDateStr(dateInput)
          myDateStr = datestr(dateInput, irisFetch.DATE_FORMATTER);
       end
@@ -963,19 +1214,18 @@ classdef irisFetch
          %irisFetch.convertTraces converts traces from java to a matlab structure
          %   mts = convertTraces(traces) where TRACES a java trace class. If the input
          %   traces are empty, then a 1x0 structure is returned.
-         
          blankSacPZ = struct('units','','constant',[],'poles',[],'zeros',[]);
          
-         blankTrace = struct('network','','station','','location',''...
-            ,'channel','','quality','',...
-            'latitude',0,'longitude',0,'elevation',0,'depth',0,...
-            'azimuth',0,'dip',0,...
+         blankTrace = struct('network','','station','','location','',...
+            'channel','','quality','','latitude',0,'longitude',0,...
+            'elevation',0,'depth',0,'azimuth',0,'dip',0,...
             'sensitivity',0,'sensitivityFrequency',0,...
             'instrument','','sensitivityUnits','UNK',...
             'data',[],'sampleCount',0,'sampleRate',nan,...
             'startTime',0,'endTime',0,'sacpz',blankSacPZ);
          mts=blankTrace;
          if isempty(traces)
+            %    disp('... since traces is empty, creating an empty structure')
             mts(1) = []; % keep the structure, but force it to be 1x0 trace
          end
          for i = 1:length(traces)
@@ -1030,6 +1280,8 @@ classdef irisFetch
             try
                jsacpz = traces(i).getSacpz();
             catch er
+               warning('An [%s] exception occurred in irisFetch.convertTraces() but was caught\n full text follows', er.identifier) %db
+               disp(er);
                if strcmp(er.identifier,'MATLAB:noSuchMethodOrField')
                   warning('IRISFETCH:convertTraces:noGetSacPZmethod',...
                      'probably using older verision of the ws-library. please retrieve the latest version');
@@ -1041,8 +1293,16 @@ classdef irisFetch
             if ~isempty(jsacpz)
                sacpz.units       = char(traces(i).getSacpz().getInputUnit());
                sacpz.constant    = traces(i).getSacpz().getConstant();
-               sacpz.poles       = irisFetch.jArrayList2complex(traces(i).getSacpz().getPoles());
-               sacpz.zeros       = irisFetch.jArrayList2complex(traces(i).getSacpz().getZeros());
+               if ( not(traces(i).getSacpz().getPoles().isEmpty()) )
+                  sacpz.poles   = irisFetch.jArrayList2complex(traces(i).getSacpz().getPoles());
+               else
+                  sacpz.poles   = [];
+               end
+               if ( not(traces(i).getSacpz().getZeros().isEmpty()) )
+                  sacpz.zeros   = irisFetch.jArrayList2complex(traces(i).getSacpz().getZeros());
+               else
+                  sacpz.zeros   = [];
+               end
                mt.sacpz          = sacpz;
             end
             mts(i) = mt;
@@ -1050,15 +1310,17 @@ classdef irisFetch
       end
       
       
-      %----------------------------------------------------------------
-      % DATE conversion routines
-      %
-      % Java classes that can be used:
-      %     java.sql.Timestamp : handles nanoseconds
-      %     java.util.Date     : handles milliseconds
-      %
-      % MATLAB is accurate to 0.01 milliseconds
-      %----------------------------------------------------------------
+      %{
+        ----------------------------------------------------------------
+       DATE conversion routines
+      
+       Java classes that can be used:
+           java.sql.Timestamp : handles nanoseconds
+           java.util.Date     : handles milliseconds
+      
+       MATLAB is accurate to 0.01 milliseconds
+      ----------------------------------------------------------------
+      %}
       
       function javadate = mdate2jdate(matlabdate)
          %mdate2jdate converts a matlab date to a java Date class
@@ -1074,9 +1336,7 @@ classdef irisFetch
          end
          
          jmillis = ((matlabdate-irisFetch.BASE_DATENUM) * irisFetch.MS_IN_DAY) + .5 ; % add 0.5 to keep it in sync.
-         
          javadate = java.util.Date(jmillis); %convert to a Date, loosing nanosecond precision
-         % javadate = java.util.Date(((datenum(matlabdate)-irisFetch.BASE_DATENUM) * irisFetch.MS_IN_DAY) + .5 )
       end
       
       %----------------------------------------------------------------
@@ -1091,7 +1351,7 @@ classdef irisFetch
          end
       end
       %{
-       function [M, argType] = getSetters(obj)
+function [M, argType] = getSetters(obj)
           [M, argType] = irisFetch.getMethods(obj,'set');
        end
       %}
@@ -1170,11 +1430,13 @@ classdef irisFetch
          methodsAndArguments(loc,2) = {argType};
          
       end
-      %%
+      
+      
       %================================================================
       %----------------------------------------------------------------
-      % BEGIN: PARSING ROUTINES
+      %% PARSING ROUTINES
       %----------------------------------------------------------------
+      %================================================================
       
       function [getterList, fieldList] = getMethodsAndFields(obj)
          
@@ -1255,7 +1517,7 @@ classdef irisFetch
          % parse takes each value, looks up its class, and converts it to MATLAB
          % struct = parse(javaObject) recursively parses a java object. If the java object
          % contains objects of other java classes, then they will be parsed also.
-         % 
+         %
          % struct = parse(javaObject, stacklistt)
          
          persistent stacklist
@@ -1275,7 +1537,7 @@ classdef irisFetch
             end
             if tf
                % if stacklist(myClass)
-               [x,UNUSED_VARIABLE] = dbstack(1); %#ok<NASGU> %remove this call from the stack, and get the list
+               [x,~] = dbstack(1); %remove this call from the stack, and get the list
                error(['\n\nRecursion detected. attempt to parse a\n  [%s] \n  '...
                   'when a parent of the same class exists.\n'...
                   'Please comment out the offending line of code (line %d)\n'],myClass,x(1).line);
@@ -1690,10 +1952,17 @@ classdef irisFetch
                s.Response                = irisFetch.parse(value.getResponse());    % get edu.iris.dmc.fdsn.station.model.Response
                % take the instrument sensitivity. These values are the INPUT units, which
                % matches previous irisFetch
-               s.SensitivityFrequency= s.Response.InstrumentSensitivity.Frequency;
-               s.SensitivityUnitDescription = s.Response.InstrumentSensitivity.InputUnits{2};
-               s.SensitivityUnits = s.Response.InstrumentSensitivity.InputUnits{1};
-               s.SensitivityValue = s.Response.InstrumentSensitivity.Value;
+               if isstruct(s.Response.InstrumentSensitivity)
+                  s.SensitivityFrequency= s.Response.InstrumentSensitivity.Frequency;
+                  s.SensitivityUnitDescription = s.Response.InstrumentSensitivity.InputUnits{2};
+                  s.SensitivityUnits = s.Response.InstrumentSensitivity.InputUnits{1};
+                  s.SensitivityValue = s.Response.InstrumentSensitivity.Value;
+               else
+                  s.SensitivityFrequency = NaN;
+                  s.SensitivityUnitDescription = '';
+                  s.SensitivityUnits = '';
+                  s.SensitivityValue = NaN;
+               end
                
                s.Equipment               = irisFetch.parse(value.getEquipment());   % get edu.iris.dmc.fdsn.station.model.Equipment
                s.SampleRateRatio         = irisFetch.parse(value.getSampleRateRatio()); % get edu.iris.dmc.fdsn.station.model.SampleRateRatioType
@@ -1896,7 +2165,7 @@ classdef irisFetch
       % END: PARSING ROUTINES
       %----------------------------------------------------------------
       %================================================================
-      %%
+      %% CRITERIA protected routines
       
       function crit = addCriteria(crit, value, addMethod)
          %used to add Sta, Net, Loc, Chan to criteria
@@ -1957,7 +2226,7 @@ classdef irisFetch
          while ~isempty(paramList) && numel(paramList) >= 2
             
             % Grab the parameter pair, then remove from parameter list
-            [param value] = deal(paramList{1:2});
+            [param, value] = deal(paramList{1:2});
             paramList(1:2)=[];
             
             indexOfMethod = strcmpi(param,settableFieldnames);
@@ -1980,7 +2249,7 @@ classdef irisFetch
                %handle special cases
                case 'boxcoordinates'
                   crit = irisFetch.setBoxCoordinates(crit, value);
-                                    
+                  
                case 'radialcoordinates'
                   crit.setLatitude(java.lang.Double(value(1)));
                   crit.setLongitude(java.lang.Double(value(2)));
@@ -1990,7 +2259,7 @@ classdef irisFetch
                   end
                   
                   
-               case 'includeavailability' 
+               case 'includeavailability'
                   assert((islogical(value)||isnumeric(value)) &&isscalar(value),'The value of IncludeAvailability should be a scalar logical: true or false (no quotes)');
                   crit.setIncludeAvailability(value);
                case 'includerestricted'
@@ -2019,6 +2288,757 @@ classdef irisFetch
             end
          end
       end
+      
+      %% SAC Read/Write routines
+      
+      function [ tr_out ] = read_sac_in(fileDirectory)
+
+         % Determine if the user input is for a file or a whole directory
+         % 'exist' returns 2 for files, 7 for directories.
+         if exist(fileDirectory,'file')==2  % For a file..
+             fileNames = dir(fileDirectory);
+         elseif exist(fileDirectory,'dir')==7  % ..for directories..
+             if strcmp(fileDirectory,'.')  % ..for 'this' directory..
+                 fileDirectory = pwd;
+             end
+             cd(fileDirectory)
+             fileNames = dir('*.SAC');
+         elseif  logical(strfind(fileDirectory,'*')) | ~isempty(strfind(fileDirectory,'?')) % ..for wildcards..
+             if strcmpi(fileDirectory,'*.SAC')
+                 fileNames = dir(fileDirectory); 
+             else
+                 fileNames = dir([fileDirectory '*.SAC']);
+             end
+         else
+             error(['IRISFETCH:read_sac_in - ' fileDirectory ' not a valid file or directory'])
+         end
+         
+         % SAC header definition
+         function sac = make_sac_header(hdrval_n,hdrval_s)
+              
+             names = {'DELTA' 'DEPMIN' 'DEPMAX' 'SCALE' 'ODELTA'...
+             'B' 'E' 'O' 'A' 'INTERNAL9'...
+             'T0' 'T1' 'T2' 'T3' 'T4'...
+             'T5' 'T6' 'T7' 'T8' 'T9'...
+             'F' 'RESP0' 'RESP1' 'RESP2' 'RESP3'...
+             'RESP4' 'RESP5' 'RESP6' 'RESP7' 'RESP8'...
+             'RESP9' 'STLA' 'STLO' 'STEL' 'STDP'...
+             'EVLA'  'EVLO' 'EVEL' 'EVDP' 'MAG'...
+             'USER0' 'USER1' 'USER2' 'USER3' 'USER4'...
+             'USER5' 'USER6' 'USER7' 'USER8' 'USER9'...
+             'DIST' 'AZ' 'BAZ' 'GCARC' 'INTERNAL54'...
+             'INTERNAL55' 'DEPMEN' 'CMPAZ' 'CMPINC' 'XMINIMUM'...
+             'XMAXIMUM' 'YMINIMUM' 'YMAXIMUM' 'UNUSED00' 'UNUSED01'...
+             'UNUSED02' 'UNUSED03' 'UNUSED04' 'UNUSED05' 'UNUSED06'...
+             'NZYEAR' 'NZJDAY' 'NZHOUR' 'NZMIN' 'NZSEC'...
+             'NZMSEC' 'NVHDR' 'NORID' 'NEVID' 'NPTS'...
+             'INTERNAL80' 'NWFID' 'NXSIZE' 'NYSIZE' 'UNUSED07'...
+             'IFTYPE' 'IDEP' 'IZTYPE' 'UNUSED' 'IINST'...
+             'ISTREG' 'IEVREG' 'IEVTYP' 'IQUAL' 'ISYNTH'...
+             'IMAGTYP' 'IMAGSRC' 'UNUSED08' 'UNUSED09' 'UNUSED10'...
+             'UNUSED11' 'UNUSED12' 'UNUSED13' 'UNUSED14' 'UNUSED15'...
+             'LEVEN' 'LPSPOL' 'LOVROK' 'LCALDA' 'UNUSED16'...
+             'KSTNM' 'KEVNM0' 'KEVNM1'...
+             'KHOLE' 'KO' 'KA'...
+             'KT0' 'KT1' 'KT2'...
+             'KT3' 'KT4' 'KT5'...
+             'KT6' 'KT7' 'KT8'...
+             'KT9' 'KF' 'KUSER0'...
+             'KUSER1' 'KUSER2' 'KCMPNM'...
+             'KNETWK' 'KDATRD' 'KINST'};
+         
+             if numel(names)~=numel(hdrval_n)+numel(hdrval_s)
+                 error('IRISFETCH:read_sac_in - header is not proper length')
+             end
+             % Read in numeric data..
+             for j = 1:length(hdrval_n)
+                 sac.(names{j}) = hdrval_n(j);
+             end
+             % Read in string data.
+             for j = 1:length(hdrval_s)
+                 % This will store all string values in a cell array, NOT
+                 % formatted strings
+                 sac.(names{length(hdrval_n)+j}) = hdrval_s{j};
+             end
+             % Check for empty location header.
+             if logical(strfind(sac.KHOLE,'-12345'))
+                 sac.KHOLE='';
+             end
+         end  % END make_sac_header
+         
+         blanksacPZ = struct('units',[],'constant',[],'poles',[],'zeros',[]);
+         tr_out = repmat(struct('network',[],'station',[],'location',[],...
+             'channel',[],'quality',[],'latitude',[],'longitude',[],...
+             'elevation',[],'depth',[],'azimuth',[],'dip',[],...
+             'sensitivity',[],'sensitivityFrequency',[],'instrument','',...
+             'sensitivityUnits',[],'data',[],'sampleCount',[],'sampleRate',[],...
+             'startTime',[],'endTime',[],'sacpz',blanksacPZ),numel(fileNames),1);
+         
+          function trace_out = format_blank_fields(trace_in)
+             % Determines if the fields of a given Trace structure contain
+             %   default SAC values and formats them as NaN for numeric fields
+             %   and empty arrays for alpha-numeric fields.
+             
+             names = fieldnames(trace_in);
+             for ii = 1:numel(names)
+                 if isnumeric(trace_in.(names{ii})) & trace_in.(names{ii})==-12345
+                     trace_in.(names{ii}) = [];
+                 elseif ischar(trace_in.(names{ii})) & ~isempty(strfind(trace_in.(names{ii}),'-12345'))
+                     trace_in.(names{ii}) = [];
+                 end
+             end
+             trace_out = trace_in;
+          end
+          
+         % Loop over filenames
+         for i=1:numel(fileNames)
+             % Assumes little-endian formatting at first, but tries
+             % big-endian format below if header values are incorrect.
+             % (the test is NVHDR~=6)
+             fid = fopen(fileNames(i).name,'r','ieee-le');
+             if fid==-1
+                 error(['IRISFETCH:read_sac_in - Cannot open file: ' fileNames(i).name])
+             end
+             
+             % Check SAC header and try byte order             
+             hn = [fread(fid,[5,14],'float32'),fread(fid,[5,8],'int32')]; hn = hn(:);
+             hs = cellstr(fread(fid,[8,24],'*char')');
+             hd = fread(fid,'float32');
+             
+             if (hn(77) == 4 || hn(77) == 5)
+                 fclose(fid);
+                 error(['IRISFETCH:read_sac_in - NVHDR = 4 or 5. File: ' fileNames(i).name ...
+                     ' may be an old version of SAC'])
+             elseif hn(77) ~= 6
+                 fclose(fid);
+                 fid = fopen(fileNames(i).name,'r','ieee-be');
+                 if fid==-1
+                     error(['IRISFETCH:read_sac_in - Cannot open file: ' fileNames(i).name])
+                 end
+                 % Re-read SAC header after retrying byte order
+                 hn = [fread(fid,[5,14],'float32'),fread(fid,[5,8],'int32')]; hn = hn(:);
+                 hs = cellstr(fread(fid,[8,24],'*char')');
+                 hd = fread(fid,'float32');
+             end
+             
+             % Match up the header name with its value
+             sac = make_sac_header(hn,hs);
+             if sac.LEVEN~=1
+                 error('IRISFETCH:read_sac_in - Data is unevenly spaced.')
+             else
+                % Now, match up the header values with what goes into 
+                % Traces structures.
+                date_str = [num2str(sac.NZYEAR) '-' num2str(sac.NZJDAY)...
+                    '-' num2str(sac.NZHOUR) ':' num2str(sac.NZMIN)...
+                    ':' num2str(sac.NZSEC) '.' num2str(sac.NZMSEC)];
+                tr_out(i).network       = sac.KNETWK;
+                tr_out(i).station       = sac.KSTNM;
+                tr_out(i).location      = sac.KHOLE;
+                tr_out(i).channel       = sac.KCMPNM;
+                tr_out(i).quality       = [];  % No SAC equivalent
+                tr_out(i).latitude      = sac.STLA;
+                tr_out(i).longitude     = sac.STLO;
+                tr_out(i).elevation     = sac.STEL;
+                tr_out(i).depth         = sac.STDP;
+                tr_out(i).azimuth       = sac.CMPAZ;
+                tr_out(i).dip           = sac.CMPINC;
+                tr_out(i).sensitivity   = [];  % No SAC equivalent
+                tr_out(i).sensitivityFrequency  = [];  % No SAC equivalent
+                tr_out(i).instrument    = sac.KINST;
+                tr_out(i).sensitivityUnits      = [];  % No SAC equivalent
+                tr_out(i).data =        hd;
+                tr_out(i).sampleCount = sac.NPTS;
+                tr_out(i).sampleRate =  1/sac.DELTA;
+                tr_out(i).startTime =   datenum(date_str,'yyyy-dd-HH:MM:SS.FFF');
+                tr_out(i).endTime =     tr_out(i).startTime + sac.NPTS*sac.DELTA/86400;
+                tr_out(i).sacpz =       tr_out(i).sacpz;
+                tr_out(i) = format_blank_fields(tr_out(i));
+             end
+         end
+      end
+      
+      function [ output_args ] = write_sac_out(writeDirectory, traces, verbosity)
+         %WRITE_JAVATRACES_TO_SAC Summary of this function goes here
+         %   Detailed explanation goes here
+         %
+         % -- SYNTHETIC TRACES --
+         % This function sets the ISYNTH flag to true based on the criteria
+         % from: ds.iris.edu/dms/products/shakemoviesynsthetics/
+         % That is... if net==SY and either:
+         %   * net == SY & loc == S1 & channel in {LXE, LXN, LXZ}
+         %   * net == SY & loc == S2 & channel in {MXE, MXN, MXZ}
+         %   This behavior is controlled by SET_SYNTHETIC_FLAG
+         
+         output_args = true;
+         dbPrint = irisFetch.getDBfprintf(verbosity);
+                
+         SET_SYNTHETIC_FLAG = true; % set the synthetic flag based on network/channel combo
+         for n = 1 : length(traces)
+            write_trace(writeDirectory, traces(n))
+         end
+         
+         function value = adjust_length(value, desired_length)
+            % pads character fields with with spaces or crops
+            
+            if length(value) < desired_length
+               z = '                '; % 16 byte spaces
+               value = [value, z(length(value)+1:desired_length)];
+            elseif length(value) > desired_length
+               value = value(1:desired_length);
+            end
+         end
+         
+         function write_sac_data_values(fid, javaTrace)
+            % Write out the amplitude values to the sac file.
+            fseek(fid, 0,'eof'); %go to end of file, which should just be the header.
+            if isjava(javaTrace)
+               data = javaTrace.getAsFloat(); % might be get as Double
+               fwrite(fid, data, 'single');
+               write_sac_field(fid, 'NPTS', numel(data)); % number of data points
+               write_sac_field(fid, 'DEPMIN', min(data)); % min value of data
+               write_sac_field(fid, 'DEPMAX', max(data)); % max value of data
+               write_sac_field(fid, 'DEPMEN', mean(data)); % eman value of data
+            elseif isstruct(javaTrace)
+               fwrite(fid, javaTrace.data, 'single');
+               write_sac_field(fid, 'NPTS', numel(javaTrace.data)); % number of data points
+               write_sac_field(fid, 'DEPMIN', min(javaTrace.data)); % min value of data
+               write_sac_field(fid, 'DEPMAX', max(javaTrace.data)); % max value of data
+               write_sac_field(fid, 'DEPMEN', mean(javaTrace.data)); % eman value of data
+            else
+               % unrecognized format
+               error('IRISFETCH:traceNeitherJavaNorStruct',...
+                  'attempted to interpret data from a trace that was neither a struct nor a java object')
+            end
+            
+         end
+         
+         function write_trace_header_to_sac(fid, javaTrace)
+            % write_trace_header_to_sac
+            % write header information to file.
+            % eg. Net, Sta, Cha, Loc, Lat, Lon, Elev, Depth, Az, Inc,
+            %     instName, dates, and delta
+            % expects an individual javaTrace or Struct
+            
+            % enumerated types...
+            ITIME = 1; % time series data
+            % data quality descriptions
+            % IOTHER = 44;
+            % IGOOD = 45;
+            % IGLCH = 46;
+            % IDROP = 47;
+            
+            write_sac_field(fid, 'NVHDR', 6); % sac version
+            
+            if isjava(javaTrace)
+               % parse out the JAVA object
+               write_sac_field(fid, 'KNETWK', char(javaTrace.getNetwork()));
+               write_sac_field(fid, 'KSTNM', char(javaTrace.getStation()));
+               write_sac_field(fid, 'KHOLE', char(javaTrace.getLocation()));
+               write_sac_field(fid, 'KCMPNM', char(javaTrace.getChannel()));
+               
+               write_sac_field(fid, 'STLA', javaTrace.getLatitude()); % Station Latitude
+               write_sac_field(fid, 'STLO', javaTrace.getLongitude()); % Station Longitude
+               write_sac_field(fid, 'STEL', javaTrace.getElevation()); % Station Elevation
+               write_sac_field(fid, 'STDP', javaTrace.getDepth()); % Station depth
+               write_sac_field(fid, 'CMPAZ', javaTrace.getAzimuth()); % Comp Az (CLK from N)
+               write_sac_field(fid, 'CMPINC', javaTrace.getDip() ); % Comp Inc Angle (from vert)
+               
+               write_sac_field(fid, 'KINST', char(javaTrace.getInstrument())); % Instrument Name
+               % write_sac_field(fid, 'B', javaTrace.getStartTime.getTime); % beginning time (epoch)
+               write_sac_field(fid, 'B', 0); % beginning time (epoch)
+               %write_sac_field(fid, 'E',); % end time (epoch)
+               startTime = javaTrace.getStartTime();
+               write_sac_field(fid, 'NZYEAR', startTime.getYear() + 1900); % GMT Year
+               write_sac_field(fid, 'NZJDAY', irisFetch.day_of_year(startTime)) % GMT Julian Day of Year
+               write_sac_field(fid, 'NZHOUR', startTime.getHours());
+               write_sac_field(fid, 'NZMIN', startTime.getMinutes());
+               write_sac_field(fid, 'NZSEC', startTime.getSeconds());
+               write_sac_field(fid, 'NZMSEC', startTime.getNanos() / 1000000); % 1 mSec = 1e+6 nanoseconds
+               write_sac_field(fid, 'IFTYPE', ITIME);
+               
+               write_sac_field(fid, 'LEVEN', true); % evenly spaced data
+               write_sac_field(fid, 'DELTA', 1/javaTrace.getSampleRate()); % ODELTA would have observed change...
+               if SET_SYNTHETIC_FLAG
+                  write_sac_field(fid, 'ISYNTH', ...
+                     isSynth(char(javaTrace.getNetwork()), ...
+                     char(javaTrace.getStation()),...
+                     char(javaTrace.getLocation()), ...
+                     char(javaTrace.getChannel())))
+               end
+               
+            elseif isstruct(javaTrace)
+               % parse out the TRACE structure.
+               write_sac_field(fid, 'KNETWK', javaTrace.network);
+               write_sac_field(fid, 'KSTNM', javaTrace.station);
+               write_sac_field(fid, 'KHOLE', javaTrace.location);
+               write_sac_field(fid, 'KCMPNM', javaTrace.channel);
+               
+               write_sac_field(fid, 'STLA', javaTrace.latitude); % Station Latitude
+               write_sac_field(fid, 'STLO', javaTrace.longitude); % Station Longitude
+               write_sac_field(fid, 'STEL', javaTrace.elevation); % Station Elevation
+               write_sac_field(fid, 'STDP', javaTrace.depth); % Station depth
+               write_sac_field(fid, 'CMPAZ', javaTrace.azimuth); % Comp Az (CLK from N)
+               write_sac_field(fid, 'CMPINC', javaTrace.dip); % Comp Inc Angle (from vert)
+               
+               write_sac_field(fid, 'KINST', javaTrace.instrument); % Instrument Name
+               % write_sac_field(fid, 'B', javaTrace.getStartTime.getTime); % beginning time (epoch)
+               write_sac_field(fid, 'B', 0); % beginning time (epoch)
+               %write_sac_field(fid, 'E',); % end time (epoch)
+               dv = datevec(javaTrace.startTime);
+               write_sac_field(fid, 'NZYEAR', dv(1)); % GMT Year
+               write_sac_field(fid, 'NZJDAY', irisFetch.day_of_year(javaTrace.startTime)) % GMT Julian Day of Year
+               write_sac_field(fid, 'NZHOUR', dv(4));
+               write_sac_field(fid, 'NZMIN', dv(5));
+               write_sac_field(fid, 'NZSEC', fix(dv(6)));
+               
+               write_sac_field(fid, 'NZMSEC', rem(dv(6),1) * 1000); % 1 mSec = 1e+6 nanoseconds
+               write_sac_field(fid, 'IFTYPE', ITIME);
+               
+               write_sac_field(fid, 'LEVEN', true); % evenly spaced data
+               write_sac_field(fid, 'DELTA', 1/javaTrace.sampleRate); % ODELTA would have observed change...
+               if SET_SYNTHETIC_FLAG
+                  write_sac_field(fid, 'ISYNTH', ...
+                     isSynth(javaTrace.network, ...
+                     javaTrace.station, ...
+                     javaTrace.location, ...
+                     javaTrace.channel));
+               end
+               
+            else
+               % unrecognized format
+               error('IRISFETCH:traceNeitherJavaNorStruct',...
+                  'attempted to write a trace that was neither a struct nor a java object')
+            end
+            
+            % ---- KNOWN but IGNORED FIELDS ------------------------------
+            % SCALE: since it is not known whether it should be included
+            % IQUAL: because SAC quality ~= IRIS quality flags.
+            % - Confirmed in issue #579.
+            
+            % Described in SAC manual, but not found in the header
+            % description: NZDTTM, KZDATE, KZTIME
+            
+            % CAN SET LPSPOL from ???
+            %write_sac_Field(fid, 'LPSPOL', javaTrace.);
+            % station polarity TRUE (+) w/ left hand rule assume TRUE
+            % ------------------------------------------------------------
+            
+            
+            function isSynthetic = isSynth(net, ~, loc, cha)
+               % checks against known synthetic combos.
+               
+               % SET ISYNTH ACCORDING TO THE CHANNEL
+               % source: ds.iris.edu/dms/products/shakemoviesynsthetics/
+               isSynthetic = false;
+               if strcmp(net, 'SY')
+                  switch loc
+                     case 'S1'
+                        isSynthetic = ismember(cha,{'LXZ', 'LXN', 'LXE'});
+                     case 'S3'
+                        isSynthetic = ismember(cha, {'MXZ', 'MXN', 'MXE'});
+                     otherwise
+                        isSynthetic = false;
+                  end
+               end
+            end
+         end
+         
+         function write_sac_field(fid, sacfield, value)
+            % write_sac_field writes an individual field to the open file.
+            % FID is the open file id
+            % FIELD is the SAC name of the field
+            % VALUE is the value to write to the file
+            % The VALUE is written directly to a specific location within
+            % the file header, in the pre-determined format.
+            thisField = type_details(sacfield);
+            switch thisField.outClass
+               case 'char'
+                  if length(value) ~= thisField.nBytes * 2
+                     value = adjust_length(value, thisField.nBytes *2);
+                  end
+            end
+            fieldpos = field_offset(sacfield);
+            if ftell(fid) == fieldpos || fseek(fid, fieldpos, 'bof') ~= -1;
+               %TODO make sure fseek successful!
+               fwrite(fid, value, thisField.outClass);
+            else
+               error('IRISFETCH:sacSeekingProblem',...
+                  'problem seeking within the SAC file')
+            end
+         end
+         
+         function write_default_sac_header(fid)
+            % writes all header fields to disk, with their default values.
+            fseek(fid,0,'bof');
+            currpointer = ftell(fid);
+            headerDefinition = get_header_definition();
+            sacHeaderNames = headerDefinition(:,1);
+            for idx = 1 : length(sacHeaderNames)
+               sacField = sacHeaderNames{idx};
+               if currpointer ~= field_offset(sacField)
+                  warning('IRISFETCH:MisplacedFilePointer', ...
+                     ['Pointer in wrong position [%d]'...
+                     '(expected %d) for field %s'],...
+                     currpointer, field_offset(sacField), sacField);
+               end
+               fieldDetails = type_details(sacField);
+               fwrite(fid, fieldDetails.defaultValue, fieldDetails.outClass);
+               currpointer = ftell(fid);
+            end
+         end
+         
+         function write_trace(writeDirectory, trace)
+            % writes one trace to file with a name based trace's metadata.
+            if ~exist(writeDirectory,'dir')
+               success = mkdir(writeDirectory);
+               if ~success
+                  error('irisFetch:Traces:unableToCreateDirectory',...
+                     'Write directory does not exist and was unable to be created: [%s]', writeDirectory);
+               end
+            end
+            machineformat = 'ieee-le';
+            outputFileName = fullfile(writeDirectory, outputname_from_trace());
+            dbPrint('Opening : [%s]\n' , outputFileName)
+            
+            fid = fopen(outputFileName, 'w+', machineformat);
+            if fid == -1
+               error('irisFetch:Traces:unableToWriteFile',...
+                  'Unable to write to file: [%s]',outputFileName);
+            end
+            dbPrint('WRITING TRACE.... to FID: %d\n', fid)
+            dbPrint('  Writing Default Header\n')
+            write_default_sac_header(fid)
+            % WRITE SAC FIELDS
+            dbPrint('  Modifying with actual values\n')
+            write_trace_header_to_sac(fid, trace)
+            
+            % WRITE DATA
+            dbPrint('  Writing data values\n')
+            write_sac_data_values(fid, trace)
+            dbPrint('  CLOSING\n')
+            fclose(fid);
+            
+            function name = outputname_from_trace()
+               % ouputname_from_trace returns an automatic name for SACfile
+               % output as NETWK.STA.LOC.CHA.JDAY.H.M.S.SAC
+               % output as IU.ANMO.00.BHZ.135.23.59.59 (NETWK)
+               
+               % matlabdate = datenummx(1970, 1, 1, 0, 0, trace.getStartTime.getTime()/1000);
+               formatstring = [...
+                  '%s.' ... Network
+                  '%s.' ... Station
+                  '%s.' ... Location
+                  '%s.' ... Channel
+                  '%04d.' ... Year
+                  '%03d.' ... Julian day
+                  '%02d.' ... Hour
+                  '%02d.' ... Minute
+                  '%02d.' ... Second
+                  'SAC'];
+               if isjava(trace)
+                  name = sprintf(formatstring,...
+                     char(trace.getNetwork()), ...
+                     char(trace.getStation()), ...
+                     char(trace.getLocation()), ...
+                     char(trace.getChannel()), ...
+                     trace.getStartTime.getYear + 1900,...
+                     irisFetch.day_of_year(trace.getStartTime), ...
+                     trace.getStartTime.getHours, ...
+                     trace.getStartTime.getMinutes, ...
+                     trace.getStartTime.getSeconds);
+               elseif isstruct(trace)
+                  % retrieve trace information from a struct
+                  [yr, ~, ~, hr, min, sec] = datevec(trace.startTime);
+                  name = sprintf(formatstring,...
+                     trace.network, ...
+                     trace.station, ...
+                     trace.location, ...
+                     trace.channel, ...
+                     yr,...
+                     irisFetch.day_of_year(trace.startTime), ...
+                     hr, ...
+                     min, ...
+                     fix(sec));
+               else
+                  % unrecognized format
+                  error('IRISFETCH:traceNeitherJavaNorStruct',...
+                     'attempted to write a trace that was neither a struct nor a java object')
+               end
+            end
+         end
+         
+         function typeDetail = type_details(sacField)
+            % retrieve details about the requested SAC field in a structure
+            % that is defined in get_header_definition()
+            persistent allTypeDetails
+            
+            if isempty(allTypeDetails)
+               allTypeDetails = containers.Map('KeyType', 'char', 'ValueType', 'any');
+               headerDefinition = get_header_definition();
+               for x = 1 : length(headerDefinition)
+                  fieldDef = headerDefinition(x,:);
+                  sacName = fieldDef{1};
+                  typeDetails = fieldDef{3};
+                  allTypeDetails(sacName) = typeDetails;
+               end
+            end
+            typeDetail = allTypeDetails(sacField);
+         end
+         
+         function offsetInBytes = field_offset(sacField)
+            % get offset (in bytes) for a given SAC field name.
+            
+            persistent offset
+            
+            if isempty(offset)
+               % this only runs once per session.
+               nBytesPerWord = 4;
+               headerDefinition = get_header_definition();
+               offset = containers.Map('KeyType', 'char', 'ValueType', 'int32');
+               for x = 1 : length(headerDefinition)
+                  fieldDef = headerDefinition(x,:);
+                  sacName = fieldDef{1};
+                  wordOffset = fieldDef{2};
+                  offset(sacName) = nBytesPerWord * wordOffset;
+               end
+            end
+            offsetInBytes = offset(sacField);
+         end
+         
+         function headerDefinition = get_header_definition()
+            % get_header_definition returns a cell of {name, word, type; ... }
+            %
+            % NAME is the SAC name.  Modified, so that UNUSED becomes UNUSED01, etc.
+            % WORD is the offset within the file, where 1 word == 4 bytes)
+            % TYPE is a struct containing  fields "outClass", "nBytes", and "defaultValue"
+            %    WHERE:
+            %       OUTCLASS is the class used to write it out to file
+            %       NBYTES is the number of bites the value occupies
+            %       DEFAULTVALUE is the default value used when initializing a header
+            
+            persistent myHeaderDefinition
+            
+            if ~isempty(myHeaderDefinition)
+               headerDefinition = myHeaderDefinition;
+               return
+            end
+            
+            % ------- Each struct defines a header field -------
+            % F: single precision floating point number
+            F.outClass = 'single'; F.nBytes = 4;
+            F.defaultValue = single(-12345.0);
+            
+            % K8: 8 character field
+            K8.outClass = 'char'; K8.nBytes = 4;
+            K8.defaultValue = '-12345  ';
+            
+            % K16: 16 character field
+            K16.outClass = 'char'; K16.nBytes = 8;
+            K16.defaultValue = '-12345          ';
+            
+            % L: Logical field, but stored as 32byte INT on disk
+            L.outClass ='int32'; L.nBytes = 4;
+            L.defaultValue = int32(false);
+            
+            % I: Enumerated class, stored as a 32byte INT on disk.
+            I.outClass = 'int32'; I.nBytes = 4;
+            I.defaultValue = int32(-12345);
+            
+            % N: a 32 byte INT
+            N.outClass = 'int32'; N.nBytes = 4;
+            N.defaultValue = int32(-12345);
+            
+            %SYMANTICS... Actually for K8 and K16, it's 8 and 16 bytes
+            %respectively.
+            % ------------------------------------------------------------
+            
+            
+            % {field name, offset in words (2 bytes each), data type}
+            myHeaderDefinition = {
+               'DELTA', 0, F;
+               'DEPMIN', 1, F;
+               'DEPMAX', 2, F;
+               'SCALE', 3, F;
+               'ODELTA', 4, F;
+               'B', 5, F;
+               'E', 6, F;
+               'O', 7, F;
+               'A', 8, F;
+               'INTERNAL9', 9, F;
+               'T0', 10, F;
+               'T1', 11, F;
+               'T2', 12, F;
+               'T3', 13, F;
+               'T4', 14, F;
+               'T5', 15, F;
+               'T6', 16, F;
+               'T7', 17, F;
+               'T8', 18, F;
+               'T9', 19, F;
+               'F', 20, F;
+               'RESP0', 21, F;
+               'RESP1', 22, F;
+               'RESP2', 23, F;
+               'RESP3', 24, F;
+               'RESP4', 25, F;
+               'RESP5', 26, F;
+               'RESP6', 27, F;
+               'RESP7', 28, F;
+               'RESP8', 29, F;
+               'RESP9', 30, F;
+               'STLA', 31, F;
+               'STLO', 32, F;
+               'STEL', 33, F;
+               'STDP', 34, F;
+               'EVLA', 35, F;
+               'EVLO', 36, F;
+               'EVEL', 37, F;
+               'EVDP', 38, F;
+               'MAG', 39, F;
+               'USER0', 40, F;
+               'USER1', 41, F;
+               'USER2', 42, F;
+               'USER3', 43, F;
+               'USER4', 44, F;
+               'USER5', 45, F;
+               'USER6', 46, F;
+               'USER7', 47, F;
+               'USER8', 48, F;
+               'USER9', 49, F;
+               'DIST', 50, F;
+               'AZ', 51, F;
+               'BAZ', 52, F;
+               'GCARC', 53, F;
+               'INTERNAL54', 54, F;
+               'INTERNAL55', 55, F;
+               'DEPMEN', 56, F;
+               'CMPAZ', 57, F;
+               'CMPINC', 58, F;
+               'XMINIMUM', 59, F;
+               'XMAXIMUM', 60, F;
+               'YMINIMUM', 61, F;
+               'YMAXIMUM', 62, F;
+               'UNUSED63', 63, F;
+               'UNUSED64', 64, F;
+               'UNUSED65', 65, F;
+               'UNUSED66', 66, F;
+               'UNUSED67', 67, F;
+               'UNUSED68', 68, F;
+               'UNUSED69', 69, F;
+               'NZYEAR', 70, I;
+               'NZJDAY', 71, I;
+               'NZHOUR', 72, I;
+               'NZMIN', 73, I;
+               'NZSEC', 74, I;
+               'NZMSEC', 75, I;
+               'NVHDR', 76, I;
+               'NORID', 77, I;
+               'NEVID', 78, I;
+               'NPTS', 79, I;
+               'INTERNAL80', 80, I;
+               'NFWID', 81, I;
+               'NXSIZE', 82, I;
+               'NYSIZE', 83, I;
+               'UNUSED84', 84, I;
+               'IFTYPE', 85, I;
+               'IDEP', 86, I;
+               'IZTYPE', 87, I;
+               'UNUSED88', 88, I;
+               'IINST', 89, I;
+               'ISTREG', 90, I;
+               'IEVREG', 91, I;
+               'IEVTYP', 92, I;
+               'IQUAL', 93, I;
+               'ISYNTH', 94, I;
+               'IMAGTYP', 95, I;
+               'IMAGSRC', 96, I;
+               'UNUSED97', 97, I;
+               'UNUSED98', 98, I;
+               'UNUSED99', 99, I;
+               'UNUSED100', 100, I;
+               'UNUSED101', 101, I;
+               'UNUSED102', 102, I;
+               'UNUSED103', 103, I;
+               'UNUSED104', 104, I;
+               'LEVEN', 105, L;
+               'LPSPOL', 106, L;
+               'LOVROK', 107, L;
+               'LCALDA', 108, L;
+               'UNUSED109', 109, L;
+               'KSTNM', 110, K8;
+               'KEVNM', 112, K16;
+               'KHOLE', 116, K8;
+               'KO', 118, K8;
+               'KA', 120, K8;
+               'KTO', 122, K8;
+               'KT1', 124, K8;
+               'KT2', 126, K8;
+               'KT3', 128, K8;
+               'KT4', 130, K8;
+               'KT5', 132, K8;
+               'KT6', 134, K8;
+               'KT7', 136, K8;
+               'KT8', 138, K8;
+               'KT9', 140, K8;
+               'KF', 142, K8;
+               'KUSER0', 144, K8;
+               'KUSER1', 146, K8;
+               'KUSER2', 148, K8;
+               'KCMPNM', 150, K8;
+               'KNETWK', 152, K8;
+               'KDATRD', 154, K8;
+               'KINST', 156, K8;
+               };
+            
+            headerDefinition = myHeaderDefinition;
+         end         
+      end
+      
+      %
+      % END SAC Read/Write routines
+      %
+      
+      function doy = day_of_year(javadate)
+         if isjava(javadate)
+            mdate = irisFetch.jdate2mdate(javadate);
+         else  % already a matlab datenum
+            mdate = javadate;
+         end
+         [y, ~, ~] = datevec(mdate);
+         doy = fix(datenum(mdate)) - datenum([y - 1, 12, 31, 0, 0, 0]);
+      end
+      
+      function f = getDBfprintf(verbosity)
+         % get a function that conditionally displays messages.
+         %   dbPrint = irisFetch.getDBfprintf(verbosity)
+         %      where VERBOSITY is true or false
+         % then use dbPrint instead of fprintf (to console only!) or disp
+         % dbPrint('This is a thing'); % will show this ONLY if verbosity
+         % was set to true when dbPrint was retrieved.         
+         %   dbPrint = irisFetch.getDBfprintf(verbosity)
+         if verbosity
+            f = @irisFetch.verbosePrint;
+         else
+            f = @irisFetch.doNothing;
+         end
+      end
+      
+      function doNothing(varargin)
+         % this function does nothing.
+         % used by irisFetch.getDBfprintf when verbosity is false
+      end
+      
+      function verbosePrint(varargin)
+         % this function replaces fprintf and printf to conditionally
+         % print information to the console. used by irisFetch.getDBfprintf
+         % when verbosity is true.
+         if nargin == 1
+            disp(varargin{1})
+         else
+            fprintf(varargin{:});
+         end
+      end
+      
    end %static protected methods
 end
 
