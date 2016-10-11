@@ -1,6 +1,6 @@
 clear;
 
-javaaddpath('IRIS-WS-2.0.6.jar');
+javaaddpath('IRIS-WS-2.0.15.jar');
 
 setup_parameters;
 lalim = parameters.lalim;
@@ -82,11 +82,7 @@ for ie=1:length(events_info)
 		end
 		disp(['Downloading station: ',stnm,' From:',event_starttime,' To:',event_endtime]);
 		try
-			if component(1) == 'L'
-			traces = irisFetch.Traces(network,stnm,'*','LH*',event_starttime,event_endtime,'includePZ');
-			elseif component(1) == 'B'
-			traces = irisFetch.Traces(network,stnm,'*','BH*',event_starttime,event_endtime,'includePZ');
-			end
+			traces = irisFetch.Traces(network,stnm,'*',component,event_starttime,event_endtime,'includePZ');
 			save(sta_filename,'traces');
 		catch e
 			e.message;
@@ -94,43 +90,25 @@ for ie=1:length(events_info)
 		end
 	end
 
-	% remove the station lacking components
-	sta_mat_files = dir(fullfile(datacache,eventid,'*.mat'));
-	for ista = 1:length(sta_mat_files) 
-		sta = load(fullfile(datacache,eventid,sta_mat_files(ista).name));
-		ind = find(ismember({sta.traces.channel},{'LHZ','BHZ'}));
-		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
-			disp(['deleting ',sta_mat_files(ista).name]);
-			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
-			continue;
-		end
-		ind = find(ismember({sta.traces.channel},{'LHN','LH1','BHN','BH1'}));
-		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
-			disp(['deleting ',sta_mat_files(ista).name]);
-			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
-			continue;
-		end
-		ind = find(ismember({sta.traces.channel},{'LHE','LH2','BHE','BH2'}));
-		if isempty(ind) || length(ind)>1 || sta.traces(ind).sampleCount < 500
-			disp(['deleting ',sta_mat_files(ista).name]);
-			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
-			continue;
-		end
-	end
-	
 	% prepare the data, remove instrument response, transfer the format
 	sta_mat_files = dir(fullfile(datacache,eventid,'*.mat'));
 	if length(sta_mat_files) < 3
 		continue;
 	end
+	nsta = 0;
 	for ista = 1:length(sta_mat_files)
 		sta = load(fullfile(datacache,eventid,sta_mat_files(ista).name));
 		ind = find(ismember({sta.traces.channel},{'LHZ','BHZ'}));
+		if isempty(ind) || length(ind)>1 
+			disp(['cannot find component, deleting ',sta_mat_files(ista).name]);
+%			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
+			continue;
+		elseif sta.traces(ind).sampleCount < 500
+			disp(['lake of sample point, deleting ',sta_mat_files(ista).name]);
+%			delete(fullfile(datacache,eventid,sta_mat_files(ista).name));
+			continue;
+		end
 		LHZ = sta.traces(ind);
-		ind = find(ismember({sta.traces.channel},{'LHN','LH1','BHN','BH1'}));
-		LHN = sta.traces(ind);
-		ind = find(ismember({sta.traces.channel},{'LHE','LH2','BHE','BH2'}));
-		LHE = sta.traces(ind);
 		stla = LHZ.latitude;
 		stlo = LHZ.longitude;
 		stnm = LHZ.station;
@@ -147,31 +125,6 @@ for ie=1:length(events_info)
 			datacmp = 'BHZ';
 			data_starttime = LHZ.startTime;
 			data_delta = 1./LHZ.sampleRate;
-		elseif parameters.component == 'LHT'
-			% do the rotation
-			LHE = rm_resp(LHE); 
-			LHN = rm_resp(LHN); 
-			dataE = LHE.data_cor;
-			dataN = LHN.data_cor;
-			if LHE.sampleCount ~= LHZ.sampleCount
-				% resample to make sure the two component have same number of data point
-				b = (LHE.startTime - otime)*24*3600;
-				delta = 1./LHE.sampleRate;
-				E_timeaxis = b:delta:b + delta*(LHE.sampleCount-1);
-				b = (LHN.startTime - otime)*24*3600;
-				delta = 1./LHN.sampleRate;
-				N_timeaxis = old_timeaxis(1):delta:old_timeaxis(end);
-				dataN = interp1(N_timeaxis,dataN,E_timeaxis,'spline','extrap');
-			end
-			baz = azimuth(stla,stlo,evla,evlo);
-			R_az = baz+180;
-			T_az = R_az+90;
-			dataR = dataN*cosd(R_az-LHN.azimuth)+dataE*cosd(R_az-LHE.azimuth);
-			dataT = dataN*cosd(T_az-LHN.azimuth)+dataE*cosd(T_az-LHE.azimuth);
-			stadata = dataT;
-			datacmp = 'LHT';
-			data_starttime = LHE.startTime;
-			data_delta = 1./LHE.sampleRate;
 		else
 			disp('Unrecognized component, exit!');
 			return;
@@ -189,15 +142,16 @@ for ie=1:length(events_info)
 			stadata = interp1(old_taxis,stadata,new_taxis,'spline');
 			data_delta = resample_delta;
 		end
-		event.stadata(ista).stla = stla;	
-		event.stadata(ista).stlo = stlo;	
-		event.stadata(ista).stel = stel;	
-		event.stadata(ista).dist = vdist(stla,stlo,evla,evlo)/1e3;
-		event.stadata(ista).otime = data_starttime*24*3600;
-		event.stadata(ista).delta = data_delta;
-		event.stadata(ista).data = stadata;	
-		event.stadata(ista).cmp = datacmp;	
-		event.stadata(ista).stnm = stnm;
+		nsta = nsta+1;
+		event.stadata(nsta).stla = stla;	
+		event.stadata(nsta).stlo = stlo;	
+		event.stadata(nsta).stel = stel;	
+		event.stadata(nsta).dist = vdist(stla,stlo,evla,evlo)/1e3;
+		event.stadata(nsta).otime = data_starttime*24*3600;
+		event.stadata(nsta).delta = data_delta;
+		event.stadata(nsta).data = stadata;	
+		event.stadata(nsta).cmp = datacmp;	
+		event.stadata(nsta).stnm = stnm;
 	end  %ista
 	save(event_filename,'event')
 	disp(['Save to ',event_filename]);
